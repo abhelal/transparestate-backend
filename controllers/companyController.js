@@ -36,24 +36,140 @@ exports.createCompany = async (req, res) => {
         status: USER_STATUS.ACTIVE,
       });
       const user = await newUser.save();
-      const company = new Company({
-        name,
-        address,
-        contactNumber,
-        country,
-        owner: user.id,
-      });
-
-      await company.save();
-
-      if (!company.id) {
-        await User.deleteOne({ id: user.id });
+      try {
+        const company = new Company({
+          name,
+          address,
+          contactNumber,
+          country,
+          owner: user.id,
+        });
+        await company.save();
+      } catch (error) {
+        await User.findByIdAndDelete(user.id);
+        return res.status(409).json({
+          success: false,
+          message: "Company creation failed",
+        });
       }
-
       return res.status(200).json({
         success: true,
         message: "Company created successfully",
       });
     }
+  }
+};
+
+exports.getCompanies = async (req, res) => {
+  const { limit = 20, page = 1 } = req.query;
+  const companies = await Company.find().populate("owner", "email");
+  return res.status(200).json({
+    success: true,
+    companies,
+  });
+};
+
+exports.getCompany = async (req, res) => {
+  const { id } = req.params;
+  const company = await Company.findOne({ companyId: id })
+    .select("-_id -__v -createdAt -updatedAt")
+    .populate("owner", "-_id email");
+  return res.status(200).json({
+    success: true,
+    company,
+  });
+};
+
+exports.updateCompany = async (req, res) => {
+  const schema = Joi.object({
+    name: Joi.string().required().min(3),
+    address: Joi.string().required().min(3),
+    contactNumber: Joi.string().required().min(3),
+    country: Joi.string().required(),
+    email: Joi.string().email().required(),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error, value } = schema.validate(req.body);
+
+  if (error) {
+    return res.status(409).json({
+      success: false,
+      message: error.details.map((err) => err.message),
+    });
+  } else {
+    const { email, name, address, contactNumber, country } = value;
+    const company = await Company.findOne({ companyId: req.params.id }).populate("owner", "id");
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    } else {
+      const user = await User.findById(company.owner.id);
+      if (user.email !== email) {
+        const isExists = await User.findOne({ email: email }).lean();
+        if (isExists) {
+          return res.status(409).json({
+            success: false,
+            message: "Email already exists",
+          });
+        }
+        user.accessToken = [];
+        user.refreshToken = [];
+        await user.save();
+      }
+      try {
+        await Company.updateOne(
+          { companyId: req.params.id },
+          {
+            name,
+            address,
+            contactNumber,
+            country,
+          }
+        );
+        await User.updateOne({ _id: user.id }, { email });
+      } catch (error) {
+        return res.status(409).json({
+          success: false,
+          message: "Company update failed",
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Company updated successfully",
+      });
+    }
+  }
+};
+
+exports.archiveCompany = async (req, res) => {
+  const company = await Company.findOne({ companyId: req.params.id }).populate("owner", "id");
+  if (!company) {
+    return res.status(404).json({
+      success: false,
+      message: "Company not found",
+    });
+  } else {
+    try {
+      await Company.updateOne(
+        { companyId: req.params.id },
+        {
+          archived: !company.archived,
+        }
+      );
+    } catch (error) {
+      return res.status(409).json({
+        success: false,
+        message: "Company archiving failed",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: company.archived
+        ? "Company unarchived successfully"
+        : "Company archived successfully",
+    });
   }
 };
