@@ -45,6 +45,8 @@ exports.createCompany = async (req, res) => {
           owner: user.id,
         });
         await company.save();
+        user.company = company.id;
+        await user.save();
       } catch (error) {
         await User.findByIdAndDelete(user.id);
         return res.status(409).json({
@@ -61,10 +63,33 @@ exports.createCompany = async (req, res) => {
 };
 
 exports.getCompanies = async (req, res) => {
-  const { limit = 20, page = 1 } = req.query;
-  const companies = await Company.find().populate("owner", "email");
+  const { query = "", page = 1 } = req.query;
+
+  const totalCompanies = await Company.countDocuments({
+    $or: [
+      { name: { $regex: query, $options: "i" } },
+      { companyId: { $regex: query, $options: "i" } },
+    ],
+  });
+
+  const totalPages = Math.ceil(totalCompanies / 10);
+
+  const companies = await Company.find({
+    $or: [
+      { name: { $regex: query, $options: "i" } },
+      { companyId: { $regex: query, $options: "i" } },
+    ],
+  })
+    .select("-_id -__v -createdAt -updatedAt")
+    .limit(10)
+    .skip((page - 1) * 10)
+    .sort({ createdAt: -1 })
+    .populate("owner", "email");
+
   return res.status(200).json({
     success: true,
+    currentPage: page,
+    totalPages,
     companies,
   });
 };

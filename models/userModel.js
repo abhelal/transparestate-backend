@@ -16,6 +16,11 @@ const userSchema = new Schema(
         return nanoid();
       },
     },
+    name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     email: {
       type: String,
       required: true,
@@ -45,6 +50,10 @@ const userSchema = new Schema(
         USER_ROLES.TENANTS,
       ],
       default: USER_ROLES.TENANTS,
+    },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
     },
     status: {
       type: String,

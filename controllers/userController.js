@@ -32,11 +32,45 @@ exports.createTenants = async (req, res) => {
         role: USER_ROLES.TENANTS,
         status: USER_STATUS.ACTIVE,
       });
-      const user = await newUser.save();
+      await newUser.save();
       return res.status(200).json({
         success: true,
         message: "Tenants created successfully",
       });
     }
   }
+};
+
+exports.getUsers = async (req, res) => {
+  const { query = "", page = 1 } = req.query;
+  const totalUsers = await User.countDocuments({
+    email: { $regex: query, $options: "i" },
+  });
+
+  const totalPages = Math.ceil(totalUsers / 10);
+
+  const users = await User.find({
+    email: { $regex: query, $options: "i" },
+  })
+    .skip((page - 1) * 10)
+    .limit(10)
+    .select("-_id -password -__v -createdAt -updatedAt")
+    .lean();
+  return res.status(200).json({
+    success: true,
+    page,
+    totalPages,
+    users,
+  });
+};
+
+exports.getUser = async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findOne({ userId })
+    .select("-_id -password -__v -createdAt -updatedAt")
+    .lean();
+  return res.status(200).json({
+    success: true,
+    user,
+  });
 };
