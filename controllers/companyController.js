@@ -123,7 +123,9 @@ exports.updateCompany = async (req, res) => {
     });
   } else {
     const { email, name, address, contactNumber, country } = value;
-    const company = await Company.findOne({ companyId: req.params.id }).populate("owner", "id");
+    const company = await Company.findOne({
+      companyId: req.params.id,
+    }).populate("owner", "id");
 
     if (!company) {
       return res.status(404).json({
@@ -131,20 +133,27 @@ exports.updateCompany = async (req, res) => {
         message: "Company not found",
       });
     } else {
-      const user = await User.findById(company.owner.id);
-      if (user.email !== email) {
-        const isExists = await User.findOne({ email: email }).lean();
-        if (isExists) {
-          return res.status(409).json({
-            success: false,
-            message: "Email already exists",
-          });
-        }
-        user.accessToken = [];
-        user.refreshToken = [];
-        await user.save();
-      }
       try {
+        const user = await User.findById(company.owner.id);
+        if (user.email !== email) {
+          const isExists = await User.findOne({ email: email }).lean();
+          if (isExists) {
+            return res.status(409).json({
+              success: false,
+              message: "Email already exists",
+            });
+          }
+          user.email = email;
+          user.accessToken = [];
+          user.refreshToken = [];
+        }
+        if (req.body.password) {
+          user.password = req.body.password;
+          user.accessToken = [];
+          user.refreshToken = [];
+        }
+        await user.save();
+
         await Company.updateOne(
           { companyId: req.params.id },
           {
@@ -154,8 +163,8 @@ exports.updateCompany = async (req, res) => {
             country,
           }
         );
-        await User.updateOne({ _id: user.id }, { email });
       } catch (error) {
+        console.log(error);
         return res.status(409).json({
           success: false,
           message: "Company update failed",
@@ -170,7 +179,10 @@ exports.updateCompany = async (req, res) => {
 };
 
 exports.archiveCompany = async (req, res) => {
-  const company = await Company.findOne({ companyId: req.params.id }).populate("owner", "id");
+  const company = await Company.findOne({ companyId: req.params.id }).populate(
+    "owner",
+    "id"
+  );
   if (!company) {
     return res.status(404).json({
       success: false,

@@ -92,14 +92,22 @@ exports.logout = async (req, res) => {
       message: "Invalid refresh token",
     });
   } else {
-    user.refreshToken = user.refreshToken.filter((token) => token !== refreshToken);
-    user.accessToken = user.accessToken.filter((token) => token !== accessToken);
+    user.refreshToken = user.refreshToken.filter(
+      (token) => token !== refreshToken
+    );
+    user.accessToken = user.accessToken.filter(
+      (token) => token !== accessToken
+    );
     await client.del(`accessToken:${accessToken}`);
     await user.save();
-    return res.status(200).clearCookie("accessToken").clearCookie("refreshToken").json({
-      success: true,
-      message: "Successfully logout",
-    });
+    return res
+      .status(200)
+      .clearCookie("accessToken")
+      .clearCookie("refreshToken")
+      .json({
+        success: true,
+        message: "Successfully logout",
+      });
   }
 };
 
@@ -124,10 +132,14 @@ exports.logoutAll = async (req, res) => {
     user.refreshToken = [];
     user.accessToken = [];
     await user.save();
-    return res.status(200).clearCookie("accessToken").clearCookie("refreshToken").json({
-      success: true,
-      message: "Successfully logout from all devices",
-    });
+    return res
+      .status(200)
+      .clearCookie("accessToken")
+      .clearCookie("refreshToken")
+      .json({
+        success: true,
+        message: "Successfully logout from all devices",
+      });
   }
 };
 

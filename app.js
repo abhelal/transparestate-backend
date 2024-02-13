@@ -24,7 +24,7 @@ let corsOptions = {
 app.use(cors(corsOptions));
 
 const socket = require("./socket");
-const client = require("./config/redis");
+// const client = require("./config/redis");
 const connection = require("./config/mongoose");
 const apiRoutes = require("./routes");
 const errorHandlers = require("./handlers/errorHandlers");
@@ -38,7 +38,7 @@ const initializeApplication = async () => {
   app.set("port", process.env.PORT || 8888);
 
   socket.initialize(server);
-  await client.connect();
+  // await client.connect();
   server.listen(app.get("port"), () => {
     console.log(`Application running → On PORT : ${server.address().port}`);
   });
@@ -48,7 +48,9 @@ const initializeApplication = async () => {
   });
 
   connection.on("error", (err) => {
-    console.log("MongoDB connection error. Please make sure MongoDB is running." + err);
+    console.log(
+      "MongoDB connection error. Please make sure MongoDB is running." + err
+    );
     process.exit();
   });
 };

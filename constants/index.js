@@ -27,8 +27,16 @@ const USER_PERMISSIONS = {
   DELETE_PROPERTIES: "delete_properties",
 };
 
+const PROPERTY_TYPE = {
+  APARTMENT: "apartment",
+  OFFICE_BUILDING: "office_building",
+  HOUSE: "house",
+  WAREHOUSE: "warehouse",
+};
+
 module.exports = {
   USER_ROLES,
   USER_STATUS,
   USER_PERMISSIONS,
+  PROPERTY_TYPE,
 };
