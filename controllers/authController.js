@@ -29,7 +29,7 @@ exports.login = async (req, res) => {
   if (!user) {
     return res.status(409).json({
       success: false,
-      message: "Email not exists",
+      message: "Account not found",
     });
   } else {
     const isMatch = await user.verifyPassword(password);
@@ -41,21 +41,11 @@ exports.login = async (req, res) => {
       });
     } else {
       const token = await user.generateAuthToken();
-      const refreshToken = await user.generateRefreshToken();
 
       await user.save();
       return res
         .status(200)
         .cookie("accessToken", token, {
-          maxAge: 60 * 60 * 1000,
-          sameSite: "Lax",
-          httpOnly: true,
-          secure: false,
-          domain: req.hostname,
-          path: "/",
-          Partitioned: true,
-        })
-        .cookie("refreshToken", refreshToken, {
           maxAge: 365 * 24 * 60 * 60 * 1000,
           sameSite: "Lax",
           httpOnly: true,
@@ -67,106 +57,67 @@ exports.login = async (req, res) => {
         .json({
           success: true,
           message: "Login successfully",
-          token: token,
-          refreshToken: refreshToken,
         });
     }
   }
 };
 
 exports.logout = async (req, res) => {
-  const { refreshToken, accessToken } = req.cookies;
-
-  if (!refreshToken) {
-    return res.status(409).json({
-      success: false,
-      message: "You are not loggedin",
-    });
-  }
-
-  const user = await User.findOne({ refreshToken: refreshToken });
+  const { accessToken } = req.cookies;
+  const user = await User.findOne({ userId: req.userId });
 
   if (!user) {
     return res.status(409).json({
       success: false,
-      message: "Invalid refresh token",
+      message: "Account not found",
     });
   } else {
-    user.refreshToken = user.refreshToken.filter(
-      (token) => token !== refreshToken
-    );
-    user.accessToken = user.accessToken.filter(
-      (token) => token !== accessToken
-    );
+    user.accessToken = user.accessToken.filter((token) => token !== accessToken);
     await client.del(`accessToken:${accessToken}`);
     await user.save();
-    return res
-      .status(200)
-      .clearCookie("accessToken")
-      .clearCookie("refreshToken")
-      .json({
-        success: true,
-        message: "Successfully logout",
-      });
+    return res.status(200).clearCookie("accessToken").json({
+      success: true,
+      message: "Successfully logout",
+    });
   }
 };
 
 exports.logoutAll = async (req, res) => {
-  const { refreshToken } = req.cookies;
-
-  if (!refreshToken) {
-    return res.status(409).json({
-      success: false,
-      message: "You are not loggedin",
-    });
-  }
-
-  const user = await User.findOne({ refreshToken: refreshToken });
-
+  const user = await User.findOne({ userId: req.userId });
   if (!user) {
     return res.status(409).json({
       success: false,
-      message: "Invalid refresh token",
+      message: "Account not found",
     });
   } else {
-    user.refreshToken = [];
+    for (let token of user.accessToken) {
+      await client.del(`accessToken:${token}`);
+    }
     user.accessToken = [];
     await user.save();
-    return res
-      .status(200)
-      .clearCookie("accessToken")
-      .clearCookie("refreshToken")
-      .json({
-        success: true,
-        message: "Successfully logout from all devices",
-      });
+    return res.status(200).clearCookie("accessToken").json({
+      success: true,
+      message: "Successfully logout from all devices",
+    });
   }
 };
 
 exports.logoutOthers = async (req, res) => {
-  const { refreshToken, accessToken } = req.cookies;
-
-  if (!refreshToken) {
-    return res.status(409).json({
-      success: false,
-      message: "You are not loggedin",
-    });
-  }
-
-  const user = await User.findOne({ refreshToken: refreshToken });
+  const { accessToken } = req.cookies;
+  const user = await User.findOne({ userId: req.userId });
 
   if (!user) {
     return res.status(409).json({
       success: false,
-      message: "Invalid refresh token",
+      message: "Account not found",
     });
   } else {
-    user.accessToken.map(async (token) => {
+    for (let token of user.accessToken) {
       if (token !== accessToken) {
         await client.del(`accessToken:${token}`);
       }
-    });
-    user.refreshToken = [refreshToken];
+    }
+
     user.accessToken = [accessToken];
     await user.save();
 

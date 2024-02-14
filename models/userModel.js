@@ -61,7 +61,6 @@ const userSchema = new Schema(
       default: USER_STATUS.ACTIVE,
     },
     accessToken: [String],
-    refreshToken: [String],
   },
   {
     timestamps: true,
@@ -83,27 +82,14 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.generateAuthToken = async function () {
   const token = jwt.sign({ userId: this.userId, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "365d",
   });
 
   if (this.accessToken.length >= 5) {
     this.accessToken.shift();
   }
-
   this.accessToken.push(token);
-  await client.set(`accessToken:${token}`, this.userId.toString(), { EX: 3600 });
-  return token;
-};
-
-userSchema.methods.generateRefreshToken = function () {
-  const token = jwt.sign({ userId: this.userId, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: "365d",
-  });
-
-  if (this.refreshToken.length >= 5) {
-    this.refreshToken.shift();
-  }
-  this.refreshToken.push(token);
+  await client.set(`accessToken:${token}`, this.userId.toString(), { EX: 365 * 24 * 60 * 60 });
   return token;
 };
 

@@ -64,7 +64,6 @@ exports.createCompany = async (req, res) => {
 
 exports.getCompanies = async (req, res) => {
   const { query = "", page = 1 } = req.query;
-
   const totalCompanies = await Company.countDocuments({
     $or: [
       { name: { $regex: query, $options: "i" } },
@@ -179,10 +178,7 @@ exports.updateCompany = async (req, res) => {
 };
 
 exports.archiveCompany = async (req, res) => {
-  const company = await Company.findOne({ companyId: req.params.id }).populate(
-    "owner",
-    "id"
-  );
+  const company = await Company.findOne({ companyId: req.params.id }).populate("owner", "id");
   if (!company) {
     return res.status(404).json({
       success: false,
