@@ -2,6 +2,7 @@ const User = require("../models/userModel");
 const Joi = require("joi");
 const { USER_STATUS } = require("../constants");
 const client = require("../config/redis");
+
 // login user
 
 exports.login = async (req, res) => {
@@ -57,6 +58,13 @@ exports.login = async (req, res) => {
         .json({
           success: true,
           message: "Login successfully",
+          user: {
+            userId: user.userId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+          },
         });
     }
   }
@@ -137,6 +145,7 @@ exports.me = async (req, res) => {
       message: "User not found",
     });
   } else {
+    console.log("user retrived");
     return res.status(200).json({
       success: true,
       message: "User details",

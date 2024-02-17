@@ -45,7 +45,7 @@ const userSchema = new Schema(
       enum: [
         USER_ROLES.SUPERADMIN,
         USER_ROLES.ADMIN,
-        USER_ROLES.OWNER,
+        USER_ROLES.CLIENT,
         USER_ROLES.MAINTAINER,
         USER_ROLES.TENANTS,
       ],
