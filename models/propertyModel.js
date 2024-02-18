@@ -38,6 +38,10 @@ const propertySchema = new Schema(
       type: String,
       required: true,
     },
+    image: {
+      type: String,
+      required: false,
+    },
     street: {
       type: String,
       required: true,
@@ -67,6 +71,10 @@ const propertySchema = new Schema(
     timestamps: true,
   }
 );
+
+propertySchema.virtual("address").get(function () {
+  return `${this.street} ${this.buildingNo}, ${this.zipCode} ${this.city}, ${this.country}`;
+});
 
 const Property = mongoose.model("Property", propertySchema);
 module.exports = Property;
