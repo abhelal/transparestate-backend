@@ -66,6 +66,11 @@ const propertySchema = new Schema(
       type: Boolean,
       default: false,
     },
+    allowPets: {
+      type: Boolean,
+      default: false,
+    },
+    amenities: [String],
   },
   {
     timestamps: true,

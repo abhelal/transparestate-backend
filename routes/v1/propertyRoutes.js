@@ -9,5 +9,9 @@ const propertyController = require("../../controllers/propertyController");
 router.post("/create", catchErrors(propertyController.createProperty));
 router.get("/list", catchErrors(propertyController.getProperties));
 router.get("/:id", catchErrors(propertyController.getProperty));
+router.put("/:id/update", catchErrors(propertyController.updateProperty));
+router.put("/:id/archive", catchErrors(propertyController.archiveProperty));
+router.put("/:id/amenities", catchErrors(propertyController.updateAmenities));
+router.put("/:id/allowpets", catchErrors(propertyController.allowPets));
 
 module.exports = router;
