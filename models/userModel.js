@@ -29,6 +29,9 @@ const userSchema = new Schema(
       lowercase: true,
       index: true,
     },
+    contactNumber: {
+      type: String,
+    },
     googleId: {
       type: String,
     },
@@ -55,6 +58,7 @@ const userSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
+    properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     status: {
       type: String,
       enum: [USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED],
