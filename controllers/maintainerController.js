@@ -29,7 +29,7 @@ exports.getMaintainers = async (req, res) => {
     })
       .select("-_id -password -accessToken")
       .populate("company", "-_id name")
-      .populate("properties", "-_id name")
+      .populate("properties", "-_id name propertyId")
       .limit(10)
       .skip(10 * (page - 1))
       .sort({ createdAt: -1 });
@@ -58,6 +58,7 @@ exports.createMaintainer = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().required(),
       contactNumber: Joi.string().required().min(3),
+      properties: Joi.array().items(Joi.string()),
     }).options({ stripUnknown: true, abortEarly: false });
 
     const { error, value } = schema.validate(req.body);
@@ -68,7 +69,7 @@ exports.createMaintainer = async (req, res) => {
         message: error.details.map((err) => err.message),
       });
     }
-    const { email, password, name, contactNumber } = value;
+    const { email, password, name, contactNumber, properties } = value;
 
     const isExists = await User.findOne({ email: email }).lean();
     if (isExists) {
@@ -83,6 +84,7 @@ exports.createMaintainer = async (req, res) => {
       email,
       password,
       contactNumber,
+      properties,
       role: USER_ROLES.MAINTAINER,
       status: USER_STATUS.ACTIVE,
       company: user.company,

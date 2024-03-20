@@ -87,6 +87,7 @@ exports.getProperties = async (req, res) => {
       success: true,
       currentPage: page,
       totalPages: Math.ceil(totaProperties / 10),
+      totaProperties,
       properties,
     });
   } catch (error) {
