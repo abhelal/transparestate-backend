@@ -5,7 +5,7 @@ const USER_ROLES = {
   CLIENT: "CLIENT",
   ADMIN: "ADMIN",
   MAINTAINER: "MAINTAINER",
-  TENANTS: "TENANTS",
+  TENANT: "TENANT",
 };
 
 // User Status

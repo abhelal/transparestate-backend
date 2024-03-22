@@ -50,15 +50,17 @@ const userSchema = new Schema(
         USER_ROLES.ADMIN,
         USER_ROLES.CLIENT,
         USER_ROLES.MAINTAINER,
-        USER_ROLES.TENANTS,
+        USER_ROLES.TENANT,
       ],
-      default: USER_ROLES.TENANTS,
+      default: USER_ROLES.TENANT,
     },
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
+    apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
+    tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },
 
     status: {
       type: String,
