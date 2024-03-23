@@ -3,6 +3,7 @@ const Tenant = require("../models/tenantsModel");
 
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
+const Tenants = require("../models/tenantsModel");
 
 exports.getTenants = async (req, res) => {
   try {
@@ -61,8 +62,8 @@ exports.getTenants = async (req, res) => {
 
 exports.createTenant = async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.userId });
-    if (!user) {
+    const requester = await User.findOne({ userId: req.userId });
+    if (!requester) {
       return res.status(403).json({
         message: "You are not authorized to create tenants",
       });
@@ -93,17 +94,21 @@ exports.createTenant = async (req, res) => {
       });
     }
 
-    const tenant = new User({
+    const tenant = await Tenants.create({});
+
+    const user = new User({
       name,
       email,
       password,
       contactNumber,
       role: USER_ROLES.TENANT,
       status: USER_STATUS.ACTIVE,
-      company: user.company,
+      company: requester.company,
+      tenant: tenant._id,
     });
 
-    await tenant.save();
+    await user.save();
+
     return res.status(201).json({ message: "Tenant created successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -135,18 +140,22 @@ exports.updateTenantInfo = async (req, res) => {
       });
     }
     const { email, name, contactNumber } = value;
-    const user = await User.findOne({ userId: id, company: requester.company });
+    const tenant = await User.findOne({
+      userId: id,
+      role: USER_ROLES.TENANT,
+      company: requester.company,
+    });
 
-    if (!user) {
+    if (!tenant) {
       return res.status(409).json({
         success: false,
-        message: "Email already exists",
+        message: "Tenant not found",
       });
     }
 
-    user.name = name;
-    user.email = email;
-    user.contactNumber = contactNumber;
+    tenant.name = name;
+    tenant.email = email;
+    tenant.contactNumber = contactNumber;
 
     const tenantSchema = Joi.object({
       birthDate: Joi.string(),
@@ -170,9 +179,9 @@ exports.updateTenantInfo = async (req, res) => {
     const { birthDate, job, familyMember, permAddress, permCountry, permCity, permZipCode } =
       tenantValue;
 
-    let tenant = await Tenant.findById(user.tenant);
-    if (!tenant) {
-      tenant = new Tenant({
+    await Tenants.findByIdAndUpdate(
+      tenant.tenant,
+      {
         birthDate,
         job,
         familyMember,
@@ -180,21 +189,11 @@ exports.updateTenantInfo = async (req, res) => {
         permCountry,
         permCity,
         permZipCode,
-      });
-      await tenant.save();
-      user.tenant = tenant._id;
-    } else {
-      tenant.birthDate = birthDate;
-      tenant.job = job;
-      tenant.familyMember = familyMember;
-      tenant.permAddress = permAddress;
-      tenant.permCountry = permCountry;
-      tenant.permCity = permCity;
-      tenant.permZipCode = permZipCode;
-      await tenant.save();
-    }
+      },
+      { upsert: true }
+    );
 
-    await user.save();
+    await tenant.save();
     return res.status(201).json({ message: "Tenant updated successfully" });
   } catch (error) {
     console.log(error);
@@ -364,7 +363,11 @@ exports.getTenant = async (req, res) => {
     const { id } = req.params;
     const user = await User.findOne({ userId: req.userId });
 
-    const tenant = await User.findOne({ userId: id, company: user.company })
+    const tenant = await User.findOne({
+      userId: id,
+      role: USER_ROLES.TENANT,
+      company: user.company,
+    })
       .select("-_id -password -accessToken")
       .populate("properties", "-_id name propertyId")
       .populate("tenant", "-_id -createdAt -updatedAt");
