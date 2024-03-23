@@ -14,4 +14,6 @@ router.put("/:id/archive", catchErrors(propertyController.archiveProperty));
 router.put("/:id/amenities", catchErrors(propertyController.updateAmenities));
 router.put("/:id/allowpets", catchErrors(propertyController.allowPets));
 
+router.post("/:id/apartments/create", catchErrors(propertyController.createApartment));
+
 module.exports = router;

@@ -71,7 +71,14 @@ const propertySchema = new Schema(
       default: false,
     },
     amenities: [String],
+    apartments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Apartment",
+      },
+    ],
   },
+
   {
     timestamps: true,
   }

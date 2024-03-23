@@ -73,6 +73,7 @@ exports.createTenant = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().required(),
       contactNumber: Joi.string().required().min(3),
+      properties: Joi.array().items(Joi.string().required()).required(),
     }).options({ stripUnknown: true, abortEarly: false });
 
     const { error, value } = schema.validate(req.body);
@@ -83,7 +84,7 @@ exports.createTenant = async (req, res) => {
         message: error.details.map((err) => err.message),
       });
     }
-    const { email, password, name, contactNumber } = value;
+    const { email, password, name, contactNumber, properties } = value;
 
     const isExists = await User.findOne({ email: email }).lean();
 
@@ -101,6 +102,7 @@ exports.createTenant = async (req, res) => {
       email,
       password,
       contactNumber,
+      properties,
       role: USER_ROLES.TENANT,
       status: USER_STATUS.ACTIVE,
       company: requester.company,
@@ -369,7 +371,7 @@ exports.getTenant = async (req, res) => {
       company: user.company,
     })
       .select("-_id -password -accessToken")
-      .populate("properties", "-_id name propertyId")
+      .populate("properties", "name propertyId")
       .populate("tenant", "-_id -createdAt -updatedAt");
 
     if (!tenant) {

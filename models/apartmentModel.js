@@ -17,6 +17,22 @@ const apartmentSchema = new Schema(
       ref: "Property",
       required: true,
     },
+    floor: {
+      type: Number,
+      required: true,
+    },
+    door: {
+      type: String,
+      required: true,
+    },
+    size: {
+      type: Number,
+      required: true,
+    },
+    rooms: {
+      type: Number,
+      required: true,
+    },
     tenant: {
       type: Schema.Types.ObjectId,
       ref: "User",

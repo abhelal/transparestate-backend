@@ -1,4 +1,5 @@
 const Property = require("../models/propertyModel");
+const Apartment = require("../models/apartmentModel");
 const User = require("../models/userModel");
 const Joi = require("joi");
 
@@ -63,22 +64,31 @@ exports.createProperty = async (req, res) => {
 exports.getProperties = async (req, res) => {
   try {
     const { query = "", page = 1 } = req.query;
-    const user = await User.findOne({ userId: req.userId });
+    const requester = await User.findOne({ userId: req.userId });
 
-    if (!user) {
+    if (!requester) {
       return res.status(403).json({
         message: "You are not authorized to view properties",
       });
     }
-    const totaProperties = await Property.find({ company: user.company }).countDocuments();
 
-    const properties = await Property.find({
-      company: user.company,
+    let totalQuery = { company: requester.company };
+
+    let findQuery = {
+      company: requester.company,
       $or: [
         { name: { $regex: query, $options: "i" } },
         { propertyId: { $regex: query, $options: "i" } },
       ],
-    })
+    };
+
+    if (requester.role !== "ADMIN") {
+      totalQuery._id = { $in: requester.properties };
+      findQuery._id = { $in: requester.properties };
+    }
+
+    const totaProperties = await Property.find(totalQuery).countDocuments();
+    const properties = await Property.find(findQuery)
       .limit(10)
       .skip(10 * (page - 1))
       .sort({ createdAt: -1 });
@@ -102,7 +112,17 @@ exports.getProperty = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findOne({ userId: req.userId });
-    const property = await Property.findOne({ propertyId: id, company: user.company });
+    const property = await Property.findOne({ propertyId: id, company: user.company })
+      .populate("maintainer", "name email")
+      .populate({
+        path: "apartments",
+        select: "floor door size rooms tenant archived",
+        populate: {
+          path: "tenant",
+          select: "name email",
+        },
+      });
+
     if (!property) {
       return res.status(404).json({
         success: false,
@@ -282,6 +302,66 @@ exports.allowPets = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Pets ${property.allowPets ? "not allowed" : "allowed"} updated successfully`,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// create apartment
+
+exports.createApartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const property = await Property.findOne({ propertyId: id, company: user.company });
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    const schema = Joi.object({
+      floor: Joi.number().required(),
+      door: Joi.string().required(),
+      size: Joi.number().required(),
+      rooms: Joi.number().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details.map((error) => error.message),
+      });
+    }
+
+    const apartmentExists = await Apartment.findOne({
+      property: property._id,
+      floor: value.floor,
+      door: value.door,
+    });
+    if (apartmentExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Apartment with that floor and door already exists",
+      });
+    }
+
+    const apartment = await Apartment.create({ ...value, property: property._id });
+    property.apartments.push(apartment._id);
+    await property.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Apartment created successfully",
+      apartment,
     });
   } catch (error) {
     res.status(400).json({
