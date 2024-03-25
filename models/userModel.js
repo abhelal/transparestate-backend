@@ -58,6 +58,7 @@ const userSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
+
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },

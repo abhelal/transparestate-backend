@@ -17,6 +17,10 @@ const apartmentSchema = new Schema(
       ref: "Property",
       required: true,
     },
+    tenant: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     floor: {
       type: Number,
       required: true,
@@ -33,13 +37,29 @@ const apartmentSchema = new Schema(
       type: Number,
       required: true,
     },
-    tenant: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
+
     archived: {
       type: Boolean,
       default: false,
+    },
+
+    leaseStartDate: {
+      type: Date,
+    },
+    leaseEndDate: {
+      type: Date,
+    },
+    rent: {
+      type: Number,
+    },
+    deposit: {
+      type: Number,
+    },
+    lateFee: {
+      type: Number,
+    },
+    paymentDueOn: {
+      type: Number,
     },
   },
   {
