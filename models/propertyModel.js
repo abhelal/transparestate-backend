@@ -84,9 +84,5 @@ const propertySchema = new Schema(
   }
 );
 
-propertySchema.virtual("address").get(function () {
-  return `${this.street} ${this.buildingNo}, ${this.zipCode} ${this.city}, ${this.country}`;
-});
-
 const Property = mongoose.model("Property", propertySchema);
 module.exports = Property;
