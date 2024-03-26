@@ -13,12 +13,16 @@ const maintenanceSchema = new Schema(
         return nanoid();
       },
     },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
     property: {
       type: Schema.Types.ObjectId,
       ref: "Property",
       required: true,
     },
-
     apartment: {
       type: Schema.Types.ObjectId,
       ref: "Apartment",
