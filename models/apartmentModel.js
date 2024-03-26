@@ -37,12 +37,6 @@ const apartmentSchema = new Schema(
       type: Number,
       required: true,
     },
-
-    archived: {
-      type: Boolean,
-      default: false,
-    },
-
     leaseStartDate: {
       type: Date,
     },
@@ -58,8 +52,9 @@ const apartmentSchema = new Schema(
     lateFee: {
       type: Number,
     },
-    paymentDueOn: {
-      type: Number,
+    archived: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -1,9 +1,9 @@
 const User = require("../models/userModel");
-const Tenant = require("../models/tenantsModel");
+const Tenants = require("../models/tenantsModel");
+const Apartment = require("../models/apartmentModel");
 
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
-const Tenants = require("../models/tenantsModel");
 
 exports.getTenants = async (req, res) => {
   try {
@@ -43,6 +43,7 @@ exports.getTenants = async (req, res) => {
     const tenants = await User.find(queryTenants)
       .select("-_id -password -accessToken")
       .populate("properties", "-_id name propertyId")
+      .populate("apartments", "-createdAt -updatedAt")
       .populate("tenant", "-_id -createdAt -updatedAt")
       .limit(10)
       .skip(10 * (page - 1))
@@ -57,6 +58,32 @@ exports.getTenants = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+
+    const tenant = await User.findOne({
+      userId: id,
+      role: USER_ROLES.TENANT,
+      company: user.company,
+    })
+      .select("-_id -password -accessToken")
+      .populate("properties", "name propertyId")
+      .populate("apartments", "-createdAt -updatedAt")
+      .populate("tenant", "-_id -createdAt -updatedAt");
+
+    if (!tenant) {
+      return res.status(404).json({
+        message: "Tenant not found",
+      });
+    }
+    return res.status(200).json({ tenant });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -203,6 +230,82 @@ exports.updateTenantInfo = async (req, res) => {
   }
 };
 
+exports.updateTenantHome = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const requester = await User.findOne({ userId: req.userId });
+
+    if (!requester) {
+      return res.status(403).json({
+        message: "You are not authorized to view properties",
+      });
+    }
+
+    const schema = Joi.object({
+      properties: Joi.array().items(Joi.object().keys({ _id: Joi.string().required() })),
+      apartment: Joi.object().keys({
+        _id: Joi.string().required(),
+        apartmentId: Joi.string().required(),
+      }),
+      leaseStartDate: Joi.string().required(),
+      leaseEndDate: Joi.string().required(),
+      rent: Joi.number().required(),
+      deposit: Joi.number().required(),
+      lateFee: Joi.number().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(409).json({
+        success: false,
+        message: error.details.map((err) => err.message),
+      });
+    }
+
+    const { properties, apartment, leaseStartDate, leaseEndDate, rent, deposit, lateFee } = value;
+
+    const tenant = await User.findOne({ userId: id, company: requester.company });
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
+    const apartmentData = await Apartment.findOne({ apartmentId: apartment.apartmentId });
+
+    if (!apartmentData) {
+      return res.status(409).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    const oldApartment = await Apartment.findById(tenant.apartments[0]);
+
+    if (oldApartment) {
+      oldApartment.tenant = null;
+      await oldApartment.save();
+    }
+
+    tenant.properties = properties.map((prop) => prop._id);
+    tenant.apartments = [apartmentData._id];
+    apartmentData.tenant = tenant._id;
+    apartmentData.leaseStartDate = leaseStartDate;
+    apartmentData.leaseEndDate = leaseEndDate;
+    apartmentData.rent = rent;
+    apartmentData.deposit = deposit;
+    apartmentData.lateFee = lateFee;
+
+    await apartmentData.save();
+    await tenant.save();
+    return res.status(201).json({ message: "Tenant home updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 exports.updateMaintainerPassword = async (req, res) => {
   try {
     const id = req.params.id;
@@ -239,48 +342,6 @@ exports.updateMaintainerPassword = async (req, res) => {
 
     await maintainer.save();
     return res.status(201).json({ message: "Password updated successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.updateMaintainerProperties = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    const user = await User.findOne({ userId: req.userId });
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-
-    const schema = Joi.object({
-      properties: Joi.array().items(Joi.string()),
-    }).options({ stripUnknown: true, abortEarly: false });
-
-    const { error, value } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(409).json({
-        success: false,
-        message: error.details.map((err) => err.message),
-      });
-    }
-    const { properties } = value;
-    const maintainer = await User.findOne({ userId: id, company: user.company });
-
-    if (!maintainer) {
-      return res.status(409).json({
-        success: false,
-        message: "Maintainer not found",
-      });
-    }
-
-    maintainer.properties = properties;
-
-    await maintainer.save();
-    return res.status(201).json({ message: "Properties updated successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -355,31 +416,6 @@ exports.deleteMaintainer = async (req, res) => {
     await maintainer.save();
 
     return res.status(201).json({ message: "Maintainer deleted successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.getTenant = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findOne({ userId: req.userId });
-
-    const tenant = await User.findOne({
-      userId: id,
-      role: USER_ROLES.TENANT,
-      company: user.company,
-    })
-      .select("-_id -password -accessToken")
-      .populate("properties", "name propertyId")
-      .populate("tenant", "-_id -createdAt -updatedAt");
-
-    if (!tenant) {
-      return res.status(404).json({
-        message: "Tenant not found",
-      });
-    }
-    return res.status(200).json({ tenant });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

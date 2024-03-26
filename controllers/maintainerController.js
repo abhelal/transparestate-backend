@@ -1,4 +1,5 @@
 const User = require("../models/userModel");
+const Property = require("../models/propertyModel");
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
 
@@ -47,9 +48,30 @@ exports.getMaintainers = async (req, res) => {
   }
 };
 
+exports.getMaintainer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const maintainer = await User.findOne({ userId: id, company: user.company })
+      .select("-_id -password -accessToken")
+      .populate("company", "-_id name")
+      .populate("properties", "_id name propertyId");
+
+    if (!maintainer) {
+      return res.status(404).json({
+        message: "Maintainer not found",
+      });
+    }
+    return res.status(200).json({ maintainer });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 exports.createMaintainer = async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.userId });
+
     if (!user) {
       return res.status(403).json({
         message: "You are not authorized to view properties",
@@ -91,8 +113,18 @@ exports.createMaintainer = async (req, res) => {
       status: USER_STATUS.ACTIVE,
       company: user.company,
     });
-
     await maintainer.save();
+
+    await Promise.all(
+      properties.map(async (prop) => {
+        const property = await Property.findById(prop);
+        if (!property.maintainers.includes(maintainer._id)) {
+          property.maintainers.push(maintainer._id);
+          await property.save();
+        }
+      })
+    );
+
     return res.status(201).json({ message: "Maintainer created successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -219,8 +251,18 @@ exports.updateMaintainerProperties = async (req, res) => {
     }
 
     maintainer.properties = properties;
-
     await maintainer.save();
+
+    await Promise.all(
+      properties.map(async (prop) => {
+        const property = await Property.findById(prop);
+        if (!property.maintainers.includes(maintainer._id)) {
+          property.maintainers.push(maintainer._id);
+          await property.save();
+        }
+      })
+    );
+
     return res.status(201).json({ message: "Properties updated successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -296,26 +338,6 @@ exports.deleteMaintainer = async (req, res) => {
     await maintainer.save();
 
     return res.status(201).json({ message: "Maintainer deleted successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.getMaintainer = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findOne({ userId: req.userId });
-    const maintainer = await User.findOne({ userId: id, company: user.company })
-      .select("-_id -password -accessToken")
-      .populate("company", "-_id name")
-      .populate("properties", "_id name propertyId");
-
-    if (!maintainer) {
-      return res.status(404).json({
-        message: "Maintainer not found",
-      });
-    }
-    return res.status(200).json({ maintainer });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

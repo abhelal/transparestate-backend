@@ -54,6 +54,7 @@ const userSchema = new Schema(
       ],
       default: USER_ROLES.TENANT,
     },
+
     company: {
       type: Schema.Types.ObjectId,
       ref: "Company",

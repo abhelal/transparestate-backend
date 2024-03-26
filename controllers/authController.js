@@ -25,10 +25,7 @@ exports.login = async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ email: email, status: USER_STATUS.ACTIVE }).populate(
-    "company",
-    "companyId name"
-  );
+  const user = await User.findOne({ email: email, status: USER_STATUS.ACTIVE }).populate("company");
 
   if (!user) {
     return res.status(409).json({
@@ -67,7 +64,7 @@ exports.login = async (req, res) => {
             lastName: user.lastName,
             email: user.email,
             role: user.role,
-            companyId: user.company.companyId,
+            company: user.company,
           },
         });
     }

@@ -113,10 +113,10 @@ exports.getProperty = async (req, res) => {
     const { id } = req.params;
     const user = await User.findOne({ userId: req.userId });
     const property = await Property.findOne({ propertyId: id, company: user.company })
-      .populate("maintainer", "name email")
+      .populate("maintainers", "name email")
       .populate({
         path: "apartments",
-        select: "floor door size rooms tenant archived",
+        select: "apartmentId floor door size rooms tenant archived",
         populate: {
           path: "tenant",
           select: "name email",

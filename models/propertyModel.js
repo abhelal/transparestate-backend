@@ -18,7 +18,7 @@ const propertySchema = new Schema(
       ref: "Company",
       required: true,
     },
-    maintainer: [
+    maintainers: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
