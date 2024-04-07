@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { customAlphabet } = require("nanoid");
 
-const companySchema = new Schema(
+const clientSchema = new Schema(
   {
-    companyId: {
+    clientId: {
       type: String,
       unique: true,
       default: () => {
@@ -40,5 +40,5 @@ const companySchema = new Schema(
   }
 );
 
-const Company = mongoose.model("Company", companySchema);
-module.exports = Company;
+const Client = mongoose.model("Client", clientSchema);
+module.exports = Client;

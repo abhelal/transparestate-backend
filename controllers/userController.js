@@ -29,7 +29,7 @@ exports.createTenants = async (req, res) => {
       const newUser = new User({
         email: email,
         password: password,
-        role: USER_ROLES.TENANTS,
+        role: USER_ROLES.TENANT,
         status: USER_STATUS.ACTIVE,
       });
       await newUser.save();

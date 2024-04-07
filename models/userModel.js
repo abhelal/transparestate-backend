@@ -47,12 +47,12 @@ const userSchema = new Schema(
       type: String,
       enum: [
         USER_ROLES.SUPERADMIN,
-        USER_ROLES.ADMIN,
         USER_ROLES.CLIENT,
         USER_ROLES.MAINTAINER,
+        USER_ROLES.JANITOR,
         USER_ROLES.TENANT,
       ],
-      default: USER_ROLES.TENANT,
+      default: USER_ROLES.CLIENT,
     },
 
     company: {
@@ -60,6 +60,7 @@ const userSchema = new Schema(
       ref: "Company",
     },
 
+    client: { type: Schema.Types.ObjectId, ref: "Client" },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },
@@ -67,7 +68,7 @@ const userSchema = new Schema(
     status: {
       type: String,
       enum: [USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED],
-      default: USER_STATUS.ACTIVE,
+      default: USER_STATUS.INACTIVE,
     },
     accessToken: [String],
   },

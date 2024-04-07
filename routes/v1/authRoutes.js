@@ -7,6 +7,7 @@ const { catchErrors } = require("../../handlers/errorHandlers");
 
 // :: Prefix Path ---  '/api/v1/auth'
 
+router.post("/register", catchErrors(authControler.register));
 router.post("/login", catchErrors(authControler.login));
 router.post("/logout", protectRoute, catchErrors(authControler.logout));
 router.post("/logout-others", protectRoute, catchErrors(authControler.logoutOthers));

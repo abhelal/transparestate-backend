@@ -1,7 +1,90 @@
 const User = require("../models/userModel");
+const Client = require("../models/clientModel");
+
 const Joi = require("joi");
-const { USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS } = require("../constants");
 const client = require("../config/redis");
+
+// register user
+
+exports.register = async (req, res) => {
+  const objectSchema = Joi.object({
+    client: Joi.string().required(),
+    name: Joi.string().required(),
+    email: Joi.string()
+      .lowercase()
+      .trim()
+      .min(3)
+      .max(255)
+      .email({ tlds: { allow: true } })
+      .required(),
+    password: Joi.string().required(),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error, value } = objectSchema.validate(req.body);
+
+  if (error) {
+    return res.status(409).json({
+      success: false,
+      message: "Invalid form data",
+      errorMessage: error.message,
+    });
+  }
+  const { client, name, email, password } = value;
+  const user = await User.findOne({ email: email });
+
+  if (user) {
+    return res.status(409).json({
+      success: false,
+      message: "Email already exists",
+    });
+  } else {
+    const newUser = new User({
+      name: client,
+      email,
+      password,
+      role: USER_ROLES.CLIENT,
+      status: USER_STATUS.INACTIVE,
+    });
+
+    await newUser.save();
+
+    const newClient = new Client({
+      owner: newUser._id,
+      name,
+    });
+
+    await newClient.save();
+    newUser.client = newClient._id;
+
+    const token = await newUser.generateAuthToken();
+    await newUser.save();
+
+    return res
+      .status(201)
+      .cookie("accessToken", token, {
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        sameSite: "Lax",
+        httpOnly: true,
+        secure: false,
+        domain: req.hostname,
+        path: "/",
+        Partitioned: true,
+      })
+      .json({
+        success: true,
+        message: "Company registered successfully",
+        user: {
+          userId: newUser.userId,
+          status: newUser.status,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          client: newClient.clientId,
+        },
+      });
+  }
+};
 
 // login user
 
@@ -138,6 +221,7 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
+  console.log("retriving user");
   const user = await User.findOne({ userId: req.userId });
 
   if (!user) {
