@@ -60,9 +60,10 @@ exports.register = async (req, res) => {
       maxAge: 365 * 24 * 60 * 60 * 1000,
       sameSite: "Lax",
       httpOnly: true,
-      secure: true,
-      domain: process.env.PORTAL,
+      secure: false,
+      domain: req.hostname,
       path: "/",
+      Partitioned: true,
     })
     .json({
       success: true,
@@ -124,9 +125,10 @@ exports.login = async (req, res) => {
           maxAge: 365 * 24 * 60 * 60 * 1000,
           sameSite: "Lax",
           httpOnly: true,
-          secure: true,
-          domain: process.env.PORTAL,
+          secure: false,
+          domain: req.hostname,
           path: "/",
+          Partitioned: true,
         })
         .json({
           success: true,
