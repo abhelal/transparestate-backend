@@ -58,12 +58,9 @@ exports.register = async (req, res) => {
     .status(201)
     .cookie("accessToken", token, {
       maxAge: 365 * 24 * 60 * 60 * 1000,
-      sameSite: "Lax",
       httpOnly: true,
-      secure: false,
+      secure: true,
       domain: req.hostname,
-      path: "/",
-      Partitioned: true,
     })
     .json({
       success: true,
@@ -123,12 +120,9 @@ exports.login = async (req, res) => {
         .status(200)
         .cookie("accessToken", token, {
           maxAge: 365 * 24 * 60 * 60 * 1000,
-          sameSite: "Lax",
           httpOnly: true,
-          secure: false,
+          secure: true,
           domain: req.hostname,
-          path: "/",
-          Partitioned: true,
         })
         .json({
           success: true,
