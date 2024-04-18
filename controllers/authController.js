@@ -213,7 +213,7 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  const user = await User.findOne({ userId: req.userId });
+  const user = await User.findOne({ userId: req.userId }).lean();
 
   if (!user) {
     return res.status(409).json({

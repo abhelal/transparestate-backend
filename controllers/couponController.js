@@ -71,8 +71,14 @@ exports.getAllCoupons = async (req, res) => {
 
 exports.deleteCoupon = async (req, res) => {
   const { id } = req.params;
-
   const coupon = await Coupon.findById(id);
+
+  if (!coupon) {
+    return res.status(404).json({
+      success: false,
+      message: "Coupon not found",
+    });
+  }
   if (coupon.uses > 0) {
     return res.status(409).json({
       success: false,
