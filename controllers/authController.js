@@ -60,7 +60,7 @@ exports.register = async (req, res) => {
       maxAge: 365 * 24 * 60 * 60 * 1000,
       httpOnly: true,
       secure: true,
-      domain: req.hostname,
+      domain: process.env.DOMAIN,
     })
     .json({
       success: true,
@@ -122,7 +122,7 @@ exports.login = async (req, res) => {
           maxAge: 365 * 24 * 60 * 60 * 1000,
           httpOnly: true,
           secure: true,
-          domain: req.hostname,
+          domain: process.env.DOMAIN,
         })
         .json({
           success: true,
