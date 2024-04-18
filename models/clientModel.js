@@ -1,25 +1,17 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const { customAlphabet } = require("nanoid");
 
 const clientSchema = new Schema(
   {
-    clientId: {
-      type: String,
-      unique: true,
-      default: () => {
-        const nanoid = customAlphabet("1234567890", 10);
-        return nanoid();
-      },
+    isSubscribed: {
+      type: Boolean,
+      default: false,
     },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    name: {
+    subscriptionPlan: {
       type: String,
-      required: true,
+    },
+    subscriptionValidUntil: {
+      type: Date,
     },
     contactNumber: {
       type: String,
@@ -29,10 +21,6 @@ const clientSchema = new Schema(
     },
     country: {
       type: String,
-    },
-    archived: {
-      type: Boolean,
-      default: false,
     },
   },
   {

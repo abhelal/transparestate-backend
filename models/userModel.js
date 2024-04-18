@@ -64,11 +64,10 @@ const userSchema = new Schema(
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },
-
     status: {
       type: String,
-      enum: [USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED],
-      default: USER_STATUS.INACTIVE,
+      enum: [USER_STATUS.NEW, USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED],
+      default: USER_STATUS.NEW,
     },
     accessToken: [String],
   },

@@ -9,7 +9,6 @@ const client = require("../config/redis");
 
 exports.register = async (req, res) => {
   const objectSchema = Joi.object({
-    client: Joi.string().required(),
     name: Joi.string().required(),
     email: Joi.string()
       .lowercase()
@@ -30,7 +29,7 @@ exports.register = async (req, res) => {
       errorMessage: error.message,
     });
   }
-  const { client, name, email, password } = value;
+  const { name, email, password } = value;
   const user = await User.findOne({ email: email });
 
   if (user) {
@@ -38,52 +37,45 @@ exports.register = async (req, res) => {
       success: false,
       message: "Email already exists",
     });
-  } else {
-    const newUser = new User({
-      name: client,
-      email,
-      password,
-      role: USER_ROLES.CLIENT,
-      status: USER_STATUS.INACTIVE,
-    });
-
-    await newUser.save();
-
-    const newClient = new Client({
-      owner: newUser._id,
-      name,
-    });
-
-    await newClient.save();
-    newUser.client = newClient._id;
-
-    const token = await newUser.generateAuthToken();
-    await newUser.save();
-
-    return res
-      .status(201)
-      .cookie("accessToken", token, {
-        maxAge: 365 * 24 * 60 * 60 * 1000,
-        sameSite: "Lax",
-        httpOnly: true,
-        secure: false,
-        domain: req.hostname,
-        path: "/",
-        Partitioned: true,
-      })
-      .json({
-        success: true,
-        message: "Company registered successfully",
-        user: {
-          userId: newUser.userId,
-          status: newUser.status,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          client: newClient.clientId,
-        },
-      });
   }
+
+  const client = await Client.create({});
+
+  const newUser = new User({
+    name,
+    email,
+    password,
+    role: USER_ROLES.CLIENT,
+    status: USER_STATUS.NEW,
+    client: client._id,
+  });
+
+  await newUser.save();
+  const token = await newUser.generateAuthToken();
+  await newUser.save();
+
+  return res
+    .status(201)
+    .cookie("accessToken", token, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      sameSite: "Lax",
+      httpOnly: true,
+      secure: false,
+      domain: req.hostname,
+      path: "/",
+      Partitioned: true,
+    })
+    .json({
+      success: true,
+      message: "Company registered successfully",
+      user: {
+        userId: newUser.userId,
+        status: newUser.status,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
 };
 
 // login user
@@ -108,7 +100,7 @@ exports.login = async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ email: email, status: USER_STATUS.ACTIVE }).populate("company");
+  const user = await User.findOne({ email: email });
 
   if (!user) {
     return res.status(409).json({
@@ -147,7 +139,7 @@ exports.login = async (req, res) => {
             lastName: user.lastName,
             email: user.email,
             role: user.role,
-            company: user.company,
+            status: user.status,
           },
         });
     }
@@ -221,7 +213,6 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  console.log("retriving user");
   const user = await User.findOne({ userId: req.userId });
 
   if (!user) {
@@ -230,7 +221,6 @@ exports.me = async (req, res) => {
       message: "User not found",
     });
   } else {
-    console.log("user retrived");
     return res.status(200).json({
       success: true,
       message: "User details",
@@ -240,6 +230,7 @@ exports.me = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
     });
   }

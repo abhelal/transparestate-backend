@@ -10,6 +10,7 @@ const USER_ROLES = {
 
 // User Status
 const USER_STATUS = {
+  NEW: "NEW",
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",
   DELETED: "DELETED",

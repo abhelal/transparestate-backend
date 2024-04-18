@@ -5,6 +5,9 @@ const { protectRoute, allowAccess } = require("../../middleware/authMiddleware")
 const { USER_ROLES } = require("../../constants");
 const userRoutes = require("./userRoutes");
 const authRoutes = require("./authRoutes");
+const couponRoutes = require("./couponRoutes");
+const clientRoutes = require("./clientRoutes");
+const subscriptionRoutes = require("./subscriptionRoutes");
 const companyRoutes = require("./companyRoutes");
 const propertyRoutes = require("./propertyRoutes");
 const maintainerRoutes = require("./maintainerRoutes");
@@ -15,6 +18,9 @@ const maintenanceRoutes = require("./maintenanceRoutes");
 
 router.use("/users", userRoutes);
 router.use("/auth", authRoutes);
+router.use("/coupons", protectRoute, couponRoutes);
+router.use("/clients", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), clientRoutes);
+router.use("/subscription", protectRoute, subscriptionRoutes);
 router.use("/company", protectRoute, companyRoutes);
 router.use("/properties", protectRoute, propertyRoutes);
 router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.ADMIN]), maintainerRoutes);
