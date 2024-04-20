@@ -28,6 +28,7 @@ const client = require("./config/redis");
 const connection = require("./config/mongoose");
 const apiRoutes = require("./routes");
 const errorHandlers = require("./handlers/errorHandlers");
+const { createSuperAdmin } = require("./utils/seeder");
 
 app.use("/api", apiRoutes);
 
@@ -43,8 +44,9 @@ const initializeApplication = async () => {
     console.log(`Application running → On PORT : ${server.address().port}`);
   });
 
-  connection.once("open", () => {
+  connection.once("open", async () => {
     console.log("MongoDB database connection established successfully");
+    await createSuperAdmin();
   });
 
   connection.on("error", (err) => {

@@ -6,5 +6,6 @@ const { catchErrors } = require("../../handlers/errorHandlers");
 // :: Prefix Path ---  '/api/v1/clients'
 
 router.get("/", catchErrors(clientController.getClients));
+router.get("/:id", catchErrors(clientController.getClient));
 
 module.exports = router;

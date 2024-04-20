@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { COUPON_TYPES } = require("../constants");
 
 const couponSchema = new mongoose.Schema(
   {
@@ -7,10 +8,10 @@ const couponSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    codeType: {
+    couponType: {
       type: String,
       required: true,
-      enum: ["fixed", "percentage", "test"],
+      enum: [COUPON_TYPES.FIXED, COUPON_TYPES.PERCENTAGE, COUPON_TYPES.TEST],
     },
     discount: {
       type: Number,

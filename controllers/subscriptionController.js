@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const Coupon = require("../models/couponModel");
 const Client = require("../models/clientModel");
 
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, COUPON_TYPES } = require("../constants");
 const Joi = require("joi");
 
 exports.activeSubscription = async (req, res) => {
@@ -26,7 +26,7 @@ exports.activeSubscription = async (req, res) => {
   const coupon = await Coupon.findOne({ code: value.code });
   if (
     !coupon ||
-    coupon.codeType != "test" ||
+    coupon.couponType != COUPON_TYPES.TEST ||
     !coupon.active ||
     coupon.uses >= coupon.maxUses ||
     coupon.expirationDate < new Date()
@@ -36,11 +36,10 @@ exports.activeSubscription = async (req, res) => {
   user.set({
     status: USER_STATUS.ACTIVE,
   });
-
   client.set({
     isSubscribed: true,
-    subscriptionPlan: coupon.codeType,
-    subscriptionValidUntil: new Date() + coupon.discount * 30 * 24 * 60 * 60 * 1000,
+    subscriptionPlan: coupon.couponType,
+    subscriptionValidUntil: new Date(Date.now() + coupon.discount * 24 * 60 * 60 * 1000),
   });
 
   coupon.set({

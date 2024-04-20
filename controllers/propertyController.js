@@ -2,6 +2,7 @@ const Property = require("../models/propertyModel");
 const Apartment = require("../models/apartmentModel");
 const User = require("../models/userModel");
 const Joi = require("joi");
+const { USER_ROLES } = require("../constants");
 
 // create Property
 
@@ -9,7 +10,7 @@ exports.createProperty = async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.userId });
 
-    if (!user || user.role !== "ADMIN") {
+    if (!user || user.role !== USER_ROLES.CLIENT || user.status !== "ACTIVE") {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to create a property",
@@ -37,8 +38,9 @@ exports.createProperty = async (req, res) => {
 
     const propertyExists = await Property.findOne({
       name: { $regex: new RegExp(`^${value.name}$`, "i") },
-      company: user.company,
+      client: user.client,
     });
+
     if (propertyExists) {
       return res.status(400).json({
         success: false,
@@ -46,11 +48,12 @@ exports.createProperty = async (req, res) => {
       });
     }
 
-    const property = await Property.create({ ...value, company: user.company });
+    const property = await Property.create({ ...value, client: user.client });
+    user.properties.push(property._id);
+    await user.save();
     res.status(201).json({
       success: true,
       message: "Property created successfully",
-      property,
     });
   } catch (error) {
     res.status(400).json({
@@ -328,7 +331,7 @@ exports.createApartment = async (req, res) => {
 
     const schema = Joi.object({
       floor: Joi.number().required(),
-      door: Joi.string().required(),
+      door: Joi.string().required().uppercase(),
       size: Joi.number().required(),
       rooms: Joi.number().required(),
     }).options({ stripUnknown: true, abortEarly: false });
@@ -345,12 +348,15 @@ exports.createApartment = async (req, res) => {
     const apartmentExists = await Apartment.findOne({
       property: property._id,
       floor: value.floor,
-      door: value.door,
+      door: { $regex: new RegExp(`^${value.door}$`, "i") },
     });
+
     if (apartmentExists) {
       return res.status(400).json({
         success: false,
-        message: "Apartment with that floor and door already exists",
+        message: `Apartment ${
+          value.floor
+        }-${value.door.toUpperCase()} already exists in this property`,
       });
     }
 

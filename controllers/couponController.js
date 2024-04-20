@@ -2,11 +2,13 @@ const Coupon = require("../models/couponModel");
 const User = require("../models/userModel");
 const Joi = require("joi");
 const { v4: uuidv4 } = require("uuid");
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, COUPON_TYPES } = require("../constants");
 
 exports.generateCoupon = async (req, res) => {
   const schema = Joi.object({
-    codeType: Joi.string().required().valid("fixed", "percentage", "test"),
+    couponType: Joi.string()
+      .required()
+      .valid(COUPON_TYPES.FIXED, COUPON_TYPES.PERCENTAGE, COUPON_TYPES.TEST),
     discount: Joi.number().required(),
     expirationDate: Joi.date().required(),
     maxUses: Joi.number().required(),
@@ -21,11 +23,11 @@ exports.generateCoupon = async (req, res) => {
       message: error.details.map((err) => err.message),
     });
   } else {
-    const { codeType, discount, expirationDate, maxUses, description } = value;
+    const { couponType, discount, expirationDate, maxUses, description } = value;
     const code = uuidv4();
     const newCoupon = new Coupon({
       code,
-      codeType,
+      couponType,
       discount,
       expirationDate,
       maxUses,

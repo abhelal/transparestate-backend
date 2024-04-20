@@ -3,6 +3,7 @@
 const USER_ROLES = {
   SUPERADMIN: "SUPERADMIN",
   CLIENT: "CLIENT",
+  MANAGER: "MANAGER",
   MAINTAINER: "MAINTAINER",
   JANITOR: "JANITOR",
   TENANT: "TENANT",
@@ -17,6 +18,7 @@ const USER_STATUS = {
 };
 
 // User Permissions
+
 const USER_PERMISSIONS = {
   VIEW_USERS: "view_users",
   CREATE_USERS: "create_users",
@@ -43,10 +45,19 @@ const MAINTENANCE_STATUS = {
   CANCELLED: "CANCELLED",
 };
 
+// Coupon Types
+
+const COUPON_TYPES = {
+  FIXED: "FIXED",
+  PERCENTAGE: "PERCENTAGE",
+  TEST: "TEST",
+};
+
 module.exports = {
   USER_ROLES,
   USER_STATUS,
   USER_PERMISSIONS,
   PROPERTY_TYPE,
   MAINTENANCE_STATUS,
+  COUPON_TYPES,
 };

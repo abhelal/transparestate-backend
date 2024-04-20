@@ -13,9 +13,9 @@ const propertySchema = new Schema(
         return nanoid();
       },
     },
-    company: {
+    client: {
       type: Schema.Types.ObjectId,
-      ref: "Company",
+      ref: "Client",
       required: true,
     },
     maintainers: [
