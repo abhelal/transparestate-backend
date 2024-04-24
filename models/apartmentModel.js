@@ -17,6 +17,11 @@ const apartmentSchema = new Schema(
       ref: "Property",
       required: true,
     },
+    client: {
+      type: Schema.Types.ObjectId,
+      ref: "Client",
+      required: true,
+    },
     tenant: {
       type: Schema.Types.ObjectId,
       ref: "User",

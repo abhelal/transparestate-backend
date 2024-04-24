@@ -3,6 +3,7 @@ const Apartment = require("../models/apartmentModel");
 const User = require("../models/userModel");
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
+const client = require("../config/redis");
 
 // create Property
 
@@ -360,7 +361,11 @@ exports.createApartment = async (req, res) => {
       });
     }
 
-    const apartment = await Apartment.create({ ...value, property: property._id });
+    const apartment = await Apartment.create({
+      ...value,
+      property: property._id,
+      client: user.client,
+    });
     property.apartments.push(apartment._id);
     await property.save();
 
@@ -370,6 +375,124 @@ exports.createApartment = async (req, res) => {
       apartment,
     });
   } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getApartment = async (req, res) => {
+  try {
+    const { propertyId, apartmentId } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const property = await Property.findOne({ propertyId, client: user.client });
+
+    const apartment = await Apartment.findOne({ apartmentId, property: property._id })
+      .populate("property", "-apartments")
+      .populate("tenant", "name email phone")
+      .lean();
+
+    if (!apartment) {
+      return res.status(404).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      apartment,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.updateApartment = async (req, res) => {
+  try {
+    const { propertyId, apartmentId } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const property = await Property.findOne({ propertyId, client: user.client });
+
+    const schema = Joi.object({
+      size: Joi.number().required(),
+      rooms: Joi.number().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details.map((error) => error.message),
+      });
+    }
+
+    const apartment = await Apartment.findOneAndUpdate(
+      { apartmentId, property: property._id },
+      value,
+      { new: true }
+    );
+
+    if (!apartment) {
+      return res.status(404).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Apartment updated successfully",
+      apartment,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.deleteApartment = async (req, res) => {
+  try {
+    const { propertyId, apartmentId } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const property = await Property.findOne({ propertyId, client: user.client });
+
+    const apartment = await Apartment.findOne({ apartmentId, property: property._id });
+
+    if (!apartment) {
+      return res.status(404).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    if (apartment.tenant) {
+      return res.status(400).json({
+        success: false,
+        message: "Apartment is currently occupied",
+      });
+    }
+
+    await Apartment.deleteOne({ apartmentId, property: property._id });
+
+    property.apartments = property.apartments.filter(
+      (id) => id.toString() !== apartment._id.toString()
+    );
+    await property.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Apartment deleted successfully",
+    });
+  } catch (error) {
+    console.log("error", error);
     res.status(400).json({
       success: false,
       message: error.message,

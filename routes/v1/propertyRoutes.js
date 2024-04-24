@@ -15,5 +15,11 @@ router.put("/:id/amenities", catchErrors(propertyController.updateAmenities));
 router.put("/:id/allowpets", catchErrors(propertyController.allowPets));
 
 router.post("/:id/apartments/create", catchErrors(propertyController.createApartment));
+router.get("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.getApartment));
+router.put("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.updateApartment));
+router.delete(
+  "/:propertyId/apartments/:apartmentId",
+  catchErrors(propertyController.deleteApartment)
+);
 
 module.exports = router;
