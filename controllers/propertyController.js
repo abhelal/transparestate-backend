@@ -390,7 +390,7 @@ exports.getApartment = async (req, res) => {
 
     const apartment = await Apartment.findOne({ apartmentId, property: property._id })
       .populate("property", "-apartments")
-      .populate("tenant", "name email phone")
+      .populate("tenant", "-_id name email userId")
       .lean();
 
     if (!apartment) {

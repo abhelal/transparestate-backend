@@ -100,7 +100,6 @@ exports.createTenant = async (req, res) => {
       email: Joi.string().email().required(),
       password: Joi.string().required(),
       contactNumber: Joi.string().required().min(3),
-      properties: Joi.array().items(Joi.string().required()).required(),
     }).options({ stripUnknown: true, abortEarly: false });
 
     const { error, value } = schema.validate(req.body);
@@ -111,7 +110,7 @@ exports.createTenant = async (req, res) => {
         message: error.details.map((err) => err.message),
       });
     }
-    const { email, password, name, contactNumber, properties } = value;
+    const { email, password, name, contactNumber } = value;
 
     const isExists = await User.findOne({ email: email }).lean();
 
@@ -129,10 +128,9 @@ exports.createTenant = async (req, res) => {
       email,
       password,
       contactNumber,
-      properties,
       role: USER_ROLES.TENANT,
       status: USER_STATUS.ACTIVE,
-      company: requester.company,
+      client: requester.client,
       tenant: tenant._id,
     });
 
@@ -265,7 +263,8 @@ exports.updateTenantHome = async (req, res) => {
 
     const { properties, apartment, leaseStartDate, leaseEndDate, rent, deposit, lateFee } = value;
 
-    const tenant = await User.findOne({ userId: id, company: requester.company });
+    const tenant = await User.findOne({ userId: id, client: requester.client });
+
     if (!tenant) {
       return res.status(409).json({
         success: false,
