@@ -21,7 +21,7 @@ router.use("/coupons", protectRoute, couponRoutes);
 router.use("/clients", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), clientRoutes);
 router.use("/subscription", protectRoute, subscriptionRoutes);
 router.use("/properties", protectRoute, propertyRoutes);
-router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.ADMIN]), maintainerRoutes);
+router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.CLIENT]), maintainerRoutes);
 router.use("/tenants", protectRoute, tenantRoutes);
 router.use("/maintenance", protectRoute, maintenanceRoutes);
 

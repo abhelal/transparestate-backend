@@ -16,13 +16,13 @@ exports.getMaintainers = async (req, res) => {
 
     const totalMaintainers = await User.find({
       role: USER_ROLES.MAINTAINER,
-      company: user.company,
+      client: user.client,
       status: { $ne: USER_STATUS.DELETED },
     }).countDocuments();
 
     const maintainers = await User.find({
       role: USER_ROLES.MAINTAINER,
-      company: user.company,
+      client: user.client,
       status: { $ne: USER_STATUS.DELETED },
       $or: [
         { name: { $regex: query, $options: "i" } },
@@ -31,7 +31,7 @@ exports.getMaintainers = async (req, res) => {
       ],
     })
       .select("-_id -password -accessToken")
-      .populate("company", "-_id name")
+      .populate("client")
       .populate("properties", "-_id name propertyId")
       .limit(10)
       .skip(10 * (page - 1))
@@ -54,7 +54,7 @@ exports.getMaintainer = async (req, res) => {
     const user = await User.findOne({ userId: req.userId });
     const maintainer = await User.findOne({ userId: id, company: user.company })
       .select("-_id -password -accessToken")
-      .populate("company", "-_id name")
+      .populate("client")
       .populate("properties", "_id name propertyId");
 
     if (!maintainer) {
@@ -96,10 +96,11 @@ exports.createMaintainer = async (req, res) => {
     const { email, password, name, contactNumber, properties } = value;
 
     const isExists = await User.findOne({ email: email }).lean();
+
     if (isExists) {
       return res.status(409).json({
         success: false,
-        message: "Email already exists",
+        message: "Maintainer email already exists",
       });
     }
 
@@ -111,8 +112,9 @@ exports.createMaintainer = async (req, res) => {
       properties,
       role: USER_ROLES.MAINTAINER,
       status: USER_STATUS.ACTIVE,
-      company: user.company,
+      client: user.client,
     });
+
     await maintainer.save();
 
     await Promise.all(
@@ -156,7 +158,7 @@ exports.updateMaintainerInfo = async (req, res) => {
       });
     }
     const { email, name, contactNumber } = value;
-    const maintainer = await User.findOne({ userId: id, company: user.company });
+    const maintainer = await User.findOne({ userId: id, client: user.client });
 
     if (!maintainer) {
       return res.status(409).json({
@@ -325,7 +327,7 @@ exports.deleteMaintainer = async (req, res) => {
         message: "You are not authorized to view properties",
       });
     }
-    const maintainer = await User.findOne({ userId: id, company: user.company });
+    const maintainer = await User.findOne({ userId: id, client: user.client });
 
     if (!maintainer) {
       return res.status(409).json({
@@ -335,8 +337,8 @@ exports.deleteMaintainer = async (req, res) => {
     }
 
     maintainer.status = USER_STATUS.DELETED;
-    await maintainer.save();
 
+    await maintainer.save();
     return res.status(201).json({ message: "Maintainer deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
