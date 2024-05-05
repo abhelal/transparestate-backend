@@ -27,7 +27,7 @@ exports.createMaintenance = async (req, res) => {
   const { maintenanceType, maintenanceDetails } = value;
 
   const newMaintenance = new Maintenance({
-    company: tenant.company,
+    client: tenant.client,
     property: apartment.property,
     apartment: apartment._id,
     tenant: tenant._id,
@@ -36,6 +36,7 @@ exports.createMaintenance = async (req, res) => {
   });
 
   await newMaintenance.save();
+
   return res.status(200).json({
     success: true,
     message: "Maintenance created successfully",
@@ -54,8 +55,8 @@ exports.getMaintenances = async (req, res) => {
     query.property = { $in: user.properties };
   }
 
-  if (user.role === USER_ROLES.ADMIN) {
-    query.company = user.company;
+  if (user.role === USER_ROLES.CLIENT) {
+    query.client = user.client;
   }
 
   const maintenances = await Maintenance.find(query)
@@ -65,5 +66,41 @@ exports.getMaintenances = async (req, res) => {
   return res.status(200).json({
     success: true,
     maintenances,
+  });
+};
+
+exports.updateMaintenance = async (req, res) => {
+  const { maintenanceId } = req.params;
+  const { status } = req.body;
+
+  const maintenance = await Maintenance.findOne({ maintenanceId });
+
+  if (!maintenance) {
+    return res.status(404).json({
+      success: false,
+      message: "Maintenance not found",
+    });
+  }
+
+  if (maintenance.maintenanceStatus === "COMPLETED") {
+    return res.status(409).json({
+      success: false,
+      message: "Maintenance already completed",
+    });
+  }
+
+  if (maintenance.maintenanceStatus === "CANCELLED") {
+    return res.status(409).json({
+      success: false,
+      message: "Maintenance already cancelled",
+    });
+  }
+
+  maintenance.maintenanceStatus = status;
+  await maintenance.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Maintenance updated successfully",
   });
 };

@@ -3,6 +3,10 @@ const Schema = mongoose.Schema;
 
 const clientSchema = new Schema(
   {
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
     isSubscribed: {
       type: Boolean,
       default: false,

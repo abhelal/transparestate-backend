@@ -3,76 +3,7 @@ const Property = require("../models/propertyModel");
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
 
-exports.getMaintainers = async (req, res) => {
-  try {
-    const { query = "", page = 1 } = req.query;
-    const user = await User.findOne({ userId: req.userId });
-
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-
-    const totalMaintainers = await User.find({
-      role: USER_ROLES.MAINTAINER,
-      client: user.client,
-      status: { $ne: USER_STATUS.DELETED },
-    }).countDocuments();
-
-    const maintainers = await User.find({
-      role: USER_ROLES.MAINTAINER,
-      client: user.client,
-      status: { $ne: USER_STATUS.DELETED },
-      $or: [
-        { name: { $regex: query, $options: "i" } },
-        { userId: { $regex: query, $options: "i" } },
-        { email: { $regex: query, $options: "i" } },
-      ],
-    })
-      .select("-_id -password -accessToken")
-      .populate("client")
-      .populate("properties", "-_id name propertyId")
-      .limit(10)
-      .skip(10 * (page - 1))
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      currentPage: page,
-      totalPages: Math.ceil(totalMaintainers / 10),
-      maintainers,
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getMaintainer = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findOne({ userId: req.userId });
-    const maintainer = await User.findOne({
-      userId: id,
-      client: user.client,
-      role: USER_ROLES.MAINTAINER,
-    })
-      .select("-_id -password -accessToken")
-      .populate("client")
-      .populate("properties", "_id name propertyId");
-
-    if (!maintainer) {
-      return res.status(404).json({
-        message: "Maintainer not found",
-      });
-    }
-    return res.status(200).json({ maintainer });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.createMaintainer = async (req, res) => {
+exports.createJanitor = async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.userId });
 
@@ -104,40 +35,109 @@ exports.createMaintainer = async (req, res) => {
     if (isExists) {
       return res.status(409).json({
         success: false,
-        message: "Maintainer email already exists",
+        message: "Janitor email already exists",
       });
     }
 
-    const maintainer = new User({
+    const janitor = new User({
       name,
       email,
       password,
       contactNumber,
       properties,
-      role: USER_ROLES.MAINTAINER,
+      role: USER_ROLES.JANITOR,
       status: USER_STATUS.ACTIVE,
       client: user.client,
     });
 
-    await maintainer.save();
+    await janitor.save();
 
     await Promise.all(
       properties.map(async (prop) => {
         const property = await Property.findById(prop);
-        if (!property.maintainers.includes(maintainer._id)) {
-          property.maintainers.push(maintainer._id);
+        if (!property.janitors.includes(janitor._id)) {
+          property.janitors.push(janitor._id);
           await property.save();
         }
       })
     );
 
-    return res.status(201).json({ message: "Maintainer created successfully" });
+    return res.status(201).json({ message: "Janitor created successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.updateMaintainerInfo = async (req, res) => {
+exports.getJanitors = async (req, res) => {
+  try {
+    const { query = "", page = 1 } = req.query;
+    const user = await User.findOne({ userId: req.userId });
+
+    if (!user) {
+      return res.status(403).json({
+        message: "You are not authorized to view properties",
+      });
+    }
+
+    const totalJanitors = await User.find({
+      role: USER_ROLES.JANITOR,
+      client: user.client,
+      status: { $ne: USER_STATUS.DELETED },
+    }).countDocuments();
+
+    const janitors = await User.find({
+      role: USER_ROLES.JANITOR,
+      client: user.client,
+      status: { $ne: USER_STATUS.DELETED },
+      $or: [
+        { name: { $regex: query, $options: "i" } },
+        { userId: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ],
+    })
+      .select("-_id -password -accessToken")
+      .populate("client")
+      .populate("properties", "-_id name propertyId")
+      .limit(10)
+      .skip(10 * (page - 1))
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      currentPage: page,
+      totalPages: Math.ceil(totalJanitors / 10),
+      janitors,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getJanitor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const janitor = await User.findOne({
+      userId: id,
+      client: user.client,
+      role: USER_ROLES.JANITOR,
+    })
+      .select("-_id -password -accessToken")
+      .populate("client")
+      .populate("properties", "_id name propertyId");
+
+    if (!janitor) {
+      return res.status(404).json({
+        message: "Janitor not found",
+      });
+    }
+    return res.status(200).json({ janitor });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateJanitorInfo = async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -176,13 +176,13 @@ exports.updateMaintainerInfo = async (req, res) => {
     maintainer.contactNumber = contactNumber;
 
     await maintainer.save();
-    return res.status(201).json({ message: "Maintainer updated successfully" });
+    return res.status(201).json({ message: "Janitor updated successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.updateMaintainerPassword = async (req, res) => {
+exports.updateJanitorPassword = async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -210,7 +210,7 @@ exports.updateMaintainerPassword = async (req, res) => {
     if (!maintainer) {
       return res.status(409).json({
         success: false,
-        message: "Maintainer not found",
+        message: "Janitor not found",
       });
     }
 
@@ -223,7 +223,7 @@ exports.updateMaintainerPassword = async (req, res) => {
   }
 };
 
-exports.updateMaintainerProperties = async (req, res) => {
+exports.updateJanitorProperties = async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -252,7 +252,7 @@ exports.updateMaintainerProperties = async (req, res) => {
     if (!maintainer) {
       return res.status(409).json({
         success: false,
-        message: "Maintainer not found",
+        message: "Janitor not found",
       });
     }
 
@@ -275,7 +275,7 @@ exports.updateMaintainerProperties = async (req, res) => {
   }
 };
 
-exports.updateMaintainerStatus = async (req, res) => {
+exports.updateJanitorStatus = async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -303,7 +303,7 @@ exports.updateMaintainerStatus = async (req, res) => {
     if (!maintainer) {
       return res.status(409).json({
         success: false,
-        message: "Maintainer not found",
+        message: "Janitor not found",
       });
     }
 
@@ -311,14 +311,15 @@ exports.updateMaintainerStatus = async (req, res) => {
 
     await maintainer.save();
     return res.status(201).json({
-      message: status === "ACTIVE" ? "Maintainer Activated successfully" : "Maintainer Deactivated successfully",
+      message:
+        status === "ACTIVE" ? "Janitor Activated successfully" : "Janitor Deactivated successfully",
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.deleteMaintainer = async (req, res) => {
+exports.deleteJanitor = async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -333,14 +334,14 @@ exports.deleteMaintainer = async (req, res) => {
     if (!maintainer) {
       return res.status(409).json({
         success: false,
-        message: "Maintainer not found",
+        message: "Janitor not found",
       });
     }
 
     maintainer.status = USER_STATUS.DELETED;
 
     await maintainer.save();
-    return res.status(201).json({ message: "Maintainer deleted successfully" });
+    return res.status(201).json({ message: "Janitor deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

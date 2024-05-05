@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
 const client = require("../config/redis");
 
 const userSchema = new Schema(
@@ -45,30 +45,27 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: [
-        USER_ROLES.SUPERADMIN,
-        USER_ROLES.CLIENT,
-        USER_ROLES.MAINTAINER,
-        USER_ROLES.JANITOR,
-        USER_ROLES.TENANT,
-      ],
+      enum: Object.keys(USER_ROLES),
       default: USER_ROLES.CLIENT,
     },
+    permissions: [
+      {
+        type: String,
+        enum: Object.keys(USER_PERMISSIONS),
+      },
+    ],
 
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: "Company",
+    status: {
+      type: String,
+      enum: Object.keys(USER_STATUS),
+      default: USER_STATUS.NEW,
     },
 
     client: { type: Schema.Types.ObjectId, ref: "Client" },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },
-    status: {
-      type: String,
-      enum: [USER_STATUS.NEW, USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED],
-      default: USER_STATUS.NEW,
-    },
+
     accessToken: [String],
   },
   {
@@ -90,9 +87,19 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.generateAuthToken = async function () {
-  const token = jwt.sign({ userId: this.userId, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: "365d",
-  });
+  const token = jwt.sign(
+    {
+      userId: this.userId,
+      role: this.role,
+      client: this.client,
+      email: this.email,
+      status: this.status,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "365d",
+    }
+  );
 
   if (this.accessToken.length >= 5) {
     this.accessToken.shift();

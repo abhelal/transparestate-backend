@@ -18,7 +18,21 @@ const propertySchema = new Schema(
       ref: "Client",
       required: true,
     },
+
+    users: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     maintainers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    janitors: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -27,12 +41,7 @@ const propertySchema = new Schema(
     propertyType: {
       type: String,
       required: true,
-      enum: [
-        PROPERTY_TYPE.APARTMENT,
-        PROPERTY_TYPE.OFFICE_BUILDING,
-        PROPERTY_TYPE.HOUSE,
-        PROPERTY_TYPE.WAREHOUSE,
-      ],
+      enum: [PROPERTY_TYPE.APARTMENT, PROPERTY_TYPE.OFFICE_BUILDING, PROPERTY_TYPE.HOUSE, PROPERTY_TYPE.WAREHOUSE],
     },
     name: {
       type: String,

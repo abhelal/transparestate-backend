@@ -207,25 +207,9 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  const user = await User.findOne({ userId: req.userId }).lean();
-
-  if (!user) {
-    return res.status(409).json({
-      success: false,
-      message: "User not found",
-    });
-  } else {
-    return res.status(200).json({
-      success: true,
-      message: "User details",
-      user: {
-        userId: user.userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-      },
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    message: "User details",
+    user: req.user,
+  });
 };

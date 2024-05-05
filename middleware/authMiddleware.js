@@ -18,8 +18,12 @@ const protectRoute = async (req, res, next) => {
       const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
 
       if (user && isValid) {
+        req.user = user;
         req.userId = user.userId;
         req.role = user.role;
+        req.client = user.client;
+        req.email = user.email;
+        req.status = user.status;
         return next();
       } else {
         const dbuser = await User.findOne({ userId: user.userId });

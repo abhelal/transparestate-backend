@@ -43,7 +43,11 @@ exports.getTenants = async (req, res) => {
     const tenants = await User.find(queryTenants)
       .select("-_id -password -accessToken")
       .populate("properties", "-_id name propertyId")
-      .populate("apartments", "-createdAt -updatedAt")
+      .populate({
+        path: "apartments",
+        select: "-createdAt -updatedAt",
+        populate: { path: "property", select: "-_id name propertyId" },
+      })
       .populate("tenant", "-_id -createdAt -updatedAt")
       .limit(10)
       .skip(10 * (page - 1))
