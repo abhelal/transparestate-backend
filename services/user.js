@@ -3,6 +3,7 @@ const Property = require("../models/propertyModel");
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
 const redisClient = require("../config/redis");
+const { toSentenceCase } = require("../utils/helper");
 
 exports.fetchAllClients = async ({ query = "", page = 1 }) => {
   const total = await User.countDocuments({
@@ -41,6 +42,41 @@ exports.fetchClient = async (id) => {
   };
 };
 
+exports.createUserAccount = async ({ userData, client, role }) => {
+  const schema = Joi.object({
+    name: Joi.string().required().min(3),
+    email: Joi.string().email().required(),
+    contactNumber: Joi.string().required().min(3),
+    password: Joi.string().required().min(8),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error, value } = schema.validate(userData);
+
+  if (error) {
+    const message = error.details.map((err) => err.message);
+    throw new Error(message);
+  }
+
+  const isExists = await User.findOne({ email: value.email });
+
+  if (isExists) {
+    throw new Error("Email already exists");
+  }
+
+  const user = new User({
+    ...value,
+    role,
+    client,
+  });
+
+  await user.save();
+
+  return {
+    success: true,
+    message: toSentenceCase(role + " created successfully"),
+  };
+};
+
 exports.fetchUsers = async ({ query = "", page = 1, client, role }) => {
   const total = await User.find({
     role,
@@ -74,6 +110,7 @@ exports.fetchUsers = async ({ query = "", page = 1, client, role }) => {
 };
 
 exports.fetchUser = async ({ userId, client, role }) => {
+  console.log("fetchUser", userId, client, role);
   const user = await User.findOne({ userId, client, role })
     .select("-_id -password -accessToken")
     .populate("client")

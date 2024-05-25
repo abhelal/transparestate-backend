@@ -10,15 +10,19 @@ const { USER_ROLES } = require("../../constants");
 router.get("/clients", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.getAllClients));
 router.get("/clients/:userId", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.getClient));
 
+router.post("/managers", catchErrors(controler.createManager));
 router.get("/managers", catchErrors(controler.getAllManagers));
 router.get("/managers/:userId", catchErrors(controler.getManager));
 
+router.post("/maintainers", catchErrors(controler.createMaintainer));
 router.get("/maintainers", catchErrors(controler.getAllMaintainers));
 router.get("/maintainers/:userId", catchErrors(controler.getMaintainer));
 
+router.post("/janitors", catchErrors(controler.createJanitor));
 router.get("/janitors", catchErrors(controler.getAllJanitors));
 router.get("/janitors/:userId", catchErrors(controler.getJanitor));
 
+router.post("/tenants", catchErrors(controler.createTenant));
 router.get("/tenants", catchErrors(controler.getAllTenants));
 router.get("/tenants/:userId", catchErrors(controler.getTenant));
 

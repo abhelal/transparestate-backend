@@ -1,8 +1,8 @@
-const client = require("../config/redis");
 const { USER_ROLES } = require("../constants");
 const {
   fetchAllClients,
   fetchClient,
+  createUserAccount,
   fetchUsers,
   fetchUser,
   updateUserProperties,
@@ -30,6 +30,16 @@ exports.getClient = async (req, res) => {
   }
 };
 
+exports.createManager = async (req, res) => {
+  try {
+    const userData = req.body;
+    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.MANAGER });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 exports.getAllManagers = async (req, res) => {
   try {
     const response = await fetchUsers({ ...req.query, client: req.client, role: USER_ROLES.MANAGER });
@@ -43,6 +53,16 @@ exports.getManager = async (req, res) => {
   try {
     const userId = req.params.userId;
     const response = await fetchUser({ userId, client: req.client, role: USER_ROLES.MANAGER });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.createMaintainer = async (req, res) => {
+  try {
+    const userData = req.body;
+    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.MAINTAINER });
     return res.status(200).json(response);
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -68,6 +88,16 @@ exports.getMaintainer = async (req, res) => {
   }
 };
 
+exports.createJanitor = async (req, res) => {
+  try {
+    const userData = req.body;
+    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.JANITOR });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 exports.getAllJanitors = async (req, res) => {
   try {
     const response = await fetchUsers({ ...req.query, client: req.client, role: USER_ROLES.JANITOR });
@@ -81,6 +111,16 @@ exports.getJanitor = async (req, res) => {
   try {
     const userId = req.params.userId;
     const response = await fetchUser({ userId, client: req.client, role: USER_ROLES.JANITOR });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.createTenant = async (req, res) => {
+  try {
+    const userData = req.body;
+    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.TENANT });
     return res.status(200).json(response);
   } catch (error) {
     return res.status(400).json({ message: error.message });
