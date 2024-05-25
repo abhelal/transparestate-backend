@@ -110,7 +110,6 @@ exports.fetchUsers = async ({ query = "", page = 1, client, role }) => {
 };
 
 exports.fetchUser = async ({ userId, client, role }) => {
-  console.log("fetchUser", userId, client, role);
   const user = await User.findOne({ userId, client, role })
     .select("-_id -password -accessToken")
     .populate("client")
@@ -180,16 +179,36 @@ exports.updateUserProperties = async ({ userId, client, properties }) => {
     throw new Error("User not found");
   }
 
+  const propertiesRemoved = user.properties.filter((prop) => !properties.includes(prop.toString()));
+  const propertiesAdded = properties.filter((prop) => !user.properties.includes(prop));
+
   user.properties = properties;
   await user.save();
 
+  const field =
+    user.role === USER_ROLES.MANAGER
+      ? "managers"
+      : user.role === USER_ROLES.MAINTAINER
+      ? "maintainers"
+      : user.role === USER_ROLES.JANITOR
+      ? "janitors"
+      : "tenants";
+
   await Promise.all(
-    properties.map(async (prop) => {
+    propertiesAdded.map(async (prop) => {
       const property = await Property.findById(prop);
-      if (!property.users.includes(user._id)) {
-        property.users.push(user._id);
-        await property.save();
-      }
+      if (!property) return;
+      property[field].push(user._id);
+      await property.save();
+    })
+  );
+
+  await Promise.all(
+    propertiesRemoved.map(async (prop) => {
+      const property = await Property.findById(prop);
+      if (!property) return;
+      property[field] = property[field].filter((id) => id.toString() !== user._id.toString());
+      await property.save();
     })
   );
 
