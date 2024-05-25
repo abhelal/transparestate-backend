@@ -80,10 +80,7 @@ exports.getProperties = async (req, res) => {
 
     let findQuery = {
       company: requester.company,
-      $or: [
-        { name: { $regex: query, $options: "i" } },
-        { propertyId: { $regex: query, $options: "i" } },
-      ],
+      $or: [{ name: { $regex: query, $options: "i" } }, { propertyId: { $regex: query, $options: "i" } }],
     };
 
     if (requester.role !== "ADMIN") {
@@ -190,11 +187,7 @@ exports.updateProperty = async (req, res) => {
         });
       }
     }
-    const updatedProperty = await Property.findOneAndUpdate(
-      { propertyId: id, company: user.company },
-      value,
-      { new: true }
-    );
+    const updatedProperty = await Property.findOneAndUpdate({ propertyId: id, company: user.company }, value, { new: true });
     res.status(200).json({
       success: true,
       message: "Property updated successfully",
@@ -223,10 +216,7 @@ exports.archiveProperty = async (req, res) => {
       });
     }
 
-    await Property.updateOne(
-      { propertyId: id, company: user.company },
-      { archived: !property.archived }
-    );
+    await Property.updateOne({ propertyId: id, company: user.company }, { archived: !property.archived });
 
     res.status(200).json({
       success: true,
@@ -244,7 +234,7 @@ exports.updateAmenities = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findOne({ userId: req.userId });
-    const property = await Property.findOne({ propertyId: id, company: user.company });
+    const property = await Property.findOne({ propertyId: id, client: user.client });
 
     if (!property) {
       return res.status(404).json({
@@ -267,7 +257,7 @@ exports.updateAmenities = async (req, res) => {
     }
 
     const updatedProperty = await Property.findOneAndUpdate(
-      { propertyId: id, company: user.company },
+      { propertyId: id, client: user.client },
       { amenities: value.amenities },
       { new: true }
     );
@@ -275,6 +265,51 @@ exports.updateAmenities = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Amenities updated successfully",
+      updatedProperty,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.updateUtilities = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ userId: req.userId });
+    const property = await Property.findOne({ propertyId: id, client: user.client });
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    const schema = Joi.object({
+      utilities: Joi.array().items(Joi.string()).required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details.map((error) => error.message),
+      });
+    }
+
+    const updatedProperty = await Property.findOneAndUpdate(
+      { propertyId: id, client: user.client },
+      { utilities: value.utilities },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Utilities updated successfully",
       updatedProperty,
     });
   } catch (error) {
@@ -298,10 +333,7 @@ exports.allowPets = async (req, res) => {
       });
     }
 
-    await Property.updateOne(
-      { propertyId: id, company: user.company },
-      { allowPets: !property.allowPets }
-    );
+    await Property.updateOne({ propertyId: id, company: user.company }, { allowPets: !property.allowPets });
 
     res.status(200).json({
       success: true,
@@ -355,9 +387,7 @@ exports.createApartment = async (req, res) => {
     if (apartmentExists) {
       return res.status(400).json({
         success: false,
-        message: `Apartment ${
-          value.floor
-        }-${value.door.toUpperCase()} already exists in this property`,
+        message: `Apartment ${value.floor}-${value.door.toUpperCase()} already exists in this property`,
       });
     }
 
@@ -432,11 +462,7 @@ exports.updateApartment = async (req, res) => {
       });
     }
 
-    const apartment = await Apartment.findOneAndUpdate(
-      { apartmentId, property: property._id },
-      value,
-      { new: true }
-    );
+    const apartment = await Apartment.findOneAndUpdate({ apartmentId, property: property._id }, value, { new: true });
 
     if (!apartment) {
       return res.status(404).json({
@@ -482,9 +508,7 @@ exports.deleteApartment = async (req, res) => {
 
     await Apartment.deleteOne({ apartmentId, property: property._id });
 
-    property.apartments = property.apartments.filter(
-      (id) => id.toString() !== apartment._id.toString()
-    );
+    property.apartments = property.apartments.filter((id) => id.toString() !== apartment._id.toString());
     await property.save();
 
     res.status(200).json({

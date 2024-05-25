@@ -13,13 +13,14 @@ const propertySchema = new Schema(
         return nanoid();
       },
     },
+
     client: {
       type: Schema.Types.ObjectId,
       ref: "Client",
       required: true,
     },
 
-    users: [
+    managers: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -33,6 +34,13 @@ const propertySchema = new Schema(
     ],
 
     janitors: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    tenants: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -80,6 +88,7 @@ const propertySchema = new Schema(
       default: false,
     },
     amenities: [String],
+    utilities: [String],
     apartments: [
       {
         type: Schema.Types.ObjectId,

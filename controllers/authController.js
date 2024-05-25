@@ -207,6 +207,7 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
+  console.log(req.userId);
   return res.status(200).json({
     success: true,
     message: "User details",
