@@ -28,8 +28,9 @@ router.get("/tenants/:userId", catchErrors(controler.getTenant));
 
 router.put("/update/info/:userId", catchErrors(controler.updateInfo));
 router.put("/update/status/:userId", catchErrors(controler.updateStatus));
-router.put("/update/password/:userId", catchErrors(controler.updatePassword));
+router.put("/update/permissions/:userId", catchErrors(controler.updatePermissions));
 router.put("/update/properties/:userId", catchErrors(controler.updateProperties));
+router.put("/update/password/:userId", catchErrors(controler.updatePassword));
 router.delete("/delete/:userId", catchErrors(controler.deleteUser));
 
 module.exports = router;

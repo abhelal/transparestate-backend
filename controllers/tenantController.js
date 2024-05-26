@@ -91,61 +91,6 @@ exports.getTenant = async (req, res) => {
   }
 };
 
-exports.createTenant = async (req, res) => {
-  try {
-    const requester = await User.findOne({ userId: req.userId });
-    if (!requester) {
-      return res.status(403).json({
-        message: "You are not authorized to create tenants",
-      });
-    }
-    const schema = Joi.object({
-      name: Joi.string().required().min(3),
-      email: Joi.string().email().required(),
-      password: Joi.string().required(),
-      contactNumber: Joi.string().required().min(3),
-    }).options({ stripUnknown: true, abortEarly: false });
-
-    const { error, value } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(409).json({
-        success: false,
-        message: error.details.map((err) => err.message),
-      });
-    }
-    const { email, password, name, contactNumber } = value;
-
-    const isExists = await User.findOne({ email: email }).lean();
-
-    if (isExists) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const tenant = await Tenants.create({});
-
-    const user = new User({
-      name,
-      email,
-      password,
-      contactNumber,
-      role: USER_ROLES.TENANT,
-      status: USER_STATUS.ACTIVE,
-      client: requester.client,
-      tenant: tenant._id,
-    });
-
-    await user.save();
-
-    return res.status(201).json({ message: "Tenant created successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
 exports.updateTenantInfo = async (req, res) => {
   try {
     const id = req.params.id;
@@ -207,8 +152,7 @@ exports.updateTenantInfo = async (req, res) => {
       });
     }
 
-    const { birthDate, job, familyMember, permAddress, permCountry, permCity, permZipCode } =
-      tenantValue;
+    const { birthDate, job, familyMember, permAddress, permCountry, permCity, permZipCode } = tenantValue;
 
     await Tenants.findByIdAndUpdate(
       tenant.tenant,
@@ -304,121 +248,6 @@ exports.updateTenantHome = async (req, res) => {
     await apartmentData.save();
     await tenant.save();
     return res.status(201).json({ message: "Tenant home updated successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.updateMaintainerPassword = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    const user = await User.findOne({ userId: req.userId });
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-    const schema = Joi.object({
-      password: Joi.string().required(),
-    }).options({ stripUnknown: true, abortEarly: false });
-
-    const { error, value } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(409).json({
-        success: false,
-        message: error.details.map((err) => err.message),
-      });
-    }
-    const { password } = value;
-    const maintainer = await User.findOne({ userId: id, company: user.company });
-
-    if (!maintainer) {
-      return res.status(409).json({
-        success: false,
-        message: "Maintainer not found",
-      });
-    }
-
-    maintainer.password = password;
-
-    await maintainer.save();
-    return res.status(201).json({ message: "Password updated successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.updateMaintainerStatus = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    const user = await User.findOne({ userId: req.userId });
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-    const schema = Joi.object({
-      status: Joi.string().valid(USER_STATUS.ACTIVE, USER_STATUS.INACTIVE, USER_STATUS.DELETED),
-    }).options({ stripUnknown: true, abortEarly: false });
-
-    const { error, value } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(409).json({
-        success: false,
-        message: error.details.map((err) => err.message),
-      });
-    }
-    const { status } = value;
-    const maintainer = await User.findOne({ userId: id, company: user.company });
-
-    if (!maintainer) {
-      return res.status(409).json({
-        success: false,
-        message: "Maintainer not found",
-      });
-    }
-
-    maintainer.status = status;
-
-    await maintainer.save();
-    return res.status(201).json({
-      message:
-        status === "ACTIVE"
-          ? "Maintainer Activated successfully"
-          : "Maintainer Deactivated successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-exports.deleteMaintainer = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    const user = await User.findOne({ userId: req.userId });
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-    const maintainer = await User.findOne({ userId: id, company: user.company });
-
-    if (!maintainer) {
-      return res.status(409).json({
-        success: false,
-        message: "Maintainer not found",
-      });
-    }
-
-    maintainer.status = USER_STATUS.DELETED;
-    await maintainer.save();
-
-    return res.status(201).json({ message: "Maintainer deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

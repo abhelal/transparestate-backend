@@ -218,6 +218,33 @@ exports.updateUserProperties = async ({ userId, client, properties }) => {
   };
 };
 
+exports.updateUserPermissions = async ({ userId, client, permissions }) => {
+  const schema = Joi.object({
+    permissions: Joi.array().items(Joi.string()),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error } = schema.validate({ permissions });
+
+  if (error) {
+    const message = error.details.map((err) => err.message);
+    throw new Error(message);
+  }
+
+  const user = await User.findOne({ userId, client });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  user.permissions = permissions;
+  await user.save();
+
+  return {
+    success: true,
+    message: "Permissions updated successfully",
+  };
+};
+
 exports.updateUserPassword = async ({ userId, client, password }) => {
   const schema = Joi.object({
     password: Joi.string().required().min(8),

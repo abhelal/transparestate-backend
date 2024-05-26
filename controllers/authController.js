@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const Client = require("../models/clientModel");
 
 const Joi = require("joi");
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
 const client = require("../config/redis");
 
 // register user
@@ -48,6 +48,7 @@ exports.register = async (req, res) => {
     role: USER_ROLES.CLIENT,
     status: USER_STATUS.NEW,
     client: client._id,
+    permissions: [USER_PERMISSIONS.CREATE_JANITOR, USER_PERMISSIONS.CREATE_TENANT],
   });
 
   await newUser.save();

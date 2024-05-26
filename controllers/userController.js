@@ -6,6 +6,7 @@ const {
   fetchUsers,
   fetchUser,
   updateUserProperties,
+  updateUserPermissions,
   updateUserInfo,
   updateUserStatus,
   updateUserPassword,
@@ -172,6 +173,17 @@ exports.updateProperties = async (req, res) => {
     const userId = req.params.userId;
     const properties = req.body.properties || [];
     const response = await updateUserProperties({ userId, client: req.client, properties });
+    return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.updatePermissions = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const permissions = req.body.permissions || [];
+    const response = await updateUserPermissions({ userId, client: req.client, permissions });
     return res.status(200).json(response);
   } catch (error) {
     return res.status(400).json({ message: error.message });
