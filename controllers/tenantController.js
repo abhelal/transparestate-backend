@@ -1,137 +1,13 @@
 const User = require("../models/userModel");
-const Tenants = require("../models/tenantsModel");
+const Tenant = require("../models/tenantModel");
 const Apartment = require("../models/apartmentModel");
 
-const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
-
-exports.getTenants = async (req, res) => {
-  try {
-    const { query = "", page = 1 } = req.query;
-    const user = await User.findOne({ userId: req.userId });
-
-    if (!user) {
-      return res.status(403).json({
-        message: "You are not authorized to view tenants",
-      });
-    }
-
-    let queryTotal = {
-      role: USER_ROLES.TENANT,
-      company: user.company,
-      status: { $ne: USER_STATUS.DELETED },
-    };
-
-    let queryTenants = {
-      role: USER_ROLES.TENANT,
-      company: user.company,
-      status: { $ne: USER_STATUS.DELETED },
-      $or: [
-        { name: { $regex: query, $options: "i" } },
-        { userId: { $regex: query, $options: "i" } },
-        { email: { $regex: query, $options: "i" } },
-      ],
-    };
-
-    if (user.role === USER_ROLES.MAINTAINER) {
-      queryTotal.properties = { $in: user.properties };
-      queryTenants.properties = { $in: user.properties };
-    }
-
-    const totalTenant = await User.find(queryTotal).countDocuments();
-
-    const tenants = await User.find(queryTenants)
-      .select("-_id -password -accessToken")
-      .populate("properties", "-_id name propertyId")
-      .populate({
-        path: "apartments",
-        select: "-createdAt -updatedAt",
-        populate: { path: "property", select: "-_id name propertyId" },
-      })
-      .populate("tenant", "-_id -createdAt -updatedAt")
-      .limit(10)
-      .skip(10 * (page - 1))
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      currentPage: page,
-      totalPages: Math.ceil(totalTenant / 10),
-      totalTenant,
-      tenants,
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.getTenant = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findOne({ userId: req.userId });
-
-    const tenant = await User.findOne({
-      userId: id,
-      role: USER_ROLES.TENANT,
-      company: user.company,
-    })
-      .select("-_id -password -accessToken")
-      .populate("properties", "name propertyId")
-      .populate("apartments", "-createdAt -updatedAt")
-      .populate("tenant", "-_id -createdAt -updatedAt");
-
-    if (!tenant) {
-      return res.status(404).json({
-        message: "Tenant not found",
-      });
-    }
-    return res.status(200).json({ tenant });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
+const { USER_ROLES } = require("../constants");
 
 exports.updateTenantInfo = async (req, res) => {
   try {
-    const id = req.params.id;
-    const requester = await User.findOne({ userId: req.userId });
-
-    if (!requester) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-    const userSchema = Joi.object({
-      name: Joi.string().required().min(3),
-      email: Joi.string().email().required(),
-      contactNumber: Joi.string().required().min(3),
-    }).options({ stripUnknown: true, abortEarly: false });
-
-    const { error, value } = userSchema.validate(req.body);
-
-    if (error) {
-      return res.status(409).json({
-        success: false,
-        message: error.details.map((err) => err.message),
-      });
-    }
-    const { email, name, contactNumber } = value;
-    const tenant = await User.findOne({
-      userId: id,
-      role: USER_ROLES.TENANT,
-      company: requester.company,
-    });
-
-    if (!tenant) {
-      return res.status(409).json({
-        success: false,
-        message: "Tenant not found",
-      });
-    }
-
-    tenant.name = name;
-    tenant.email = email;
-    tenant.contactNumber = contactNumber;
+    const userId = req.params.id;
 
     const tenantSchema = Joi.object({
       birthDate: Joi.string(),
@@ -143,32 +19,30 @@ exports.updateTenantInfo = async (req, res) => {
       permZipCode: Joi.string(),
     }).options({ stripUnknown: true, abortEarly: false });
 
-    const { error: tenantError, value: tenantValue } = tenantSchema.validate(req.body);
+    const { error, value } = tenantSchema.validate(req.body);
 
-    if (tenantError) {
+    if (error) {
       return res.status(409).json({
         success: false,
-        message: tenantError.details.map((err) => err.message),
+        message: error.details.map((err) => err.message),
       });
     }
 
-    const { birthDate, job, familyMember, permAddress, permCountry, permCity, permZipCode } = tenantValue;
+    const user = await User.findOne({ userId, client: req.client, role: USER_ROLES.TENANT });
 
-    await Tenants.findByIdAndUpdate(
-      tenant.tenant,
-      {
-        birthDate,
-        job,
-        familyMember,
-        permAddress,
-        permCountry,
-        permCity,
-        permZipCode,
-      },
-      { upsert: true }
-    );
+    if (!user) {
+      return res.status(409).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
-    await tenant.save();
+    const { lastErrorObject } = await Tenant.findOneAndUpdate({ userId }, value, { new: true, upsert: true, includeResultMetadata: true });
+
+    if (!lastErrorObject.updatedExisting) {
+      await User.findOneAndUpdate({ userId }, { tenant: lastErrorObject.upserted });
+    }
+
     return res.status(201).json({ message: "Tenant updated successfully" });
   } catch (error) {
     console.log(error);

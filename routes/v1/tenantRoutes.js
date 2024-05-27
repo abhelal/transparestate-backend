@@ -5,8 +5,7 @@ const tenantController = require("../../controllers/tenantController");
 
 // :: Prefix Path ---  '/api/v1/tenants'
 
-router.get("/:id", catchErrors(tenantController.getTenant));
-router.put("/:id/update/info", catchErrors(tenantController.updateTenantInfo));
-router.put("/:id/update/home", catchErrors(tenantController.updateTenantHome));
+router.put("/update/info/:id", catchErrors(tenantController.updateTenantInfo));
+router.put("/update/home/:id", catchErrors(tenantController.updateTenantHome));
 
 module.exports = router;

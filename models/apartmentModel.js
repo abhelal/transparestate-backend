@@ -45,9 +45,6 @@ const apartmentSchema = new Schema(
     leaseStartDate: {
       type: Date,
     },
-    leaseEndDate: {
-      type: Date,
-    },
     rent: {
       type: Number,
     },

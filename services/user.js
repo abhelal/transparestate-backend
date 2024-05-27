@@ -113,6 +113,7 @@ exports.fetchUser = async ({ userId, client, role }) => {
   const user = await User.findOne({ userId, client, role })
     .select("-_id -password -accessToken")
     .populate("client")
+    .populate("tenant")
     .populate("properties", "name propertyId")
     .lean();
   return {

@@ -64,7 +64,7 @@ const userSchema = new Schema(
     client: { type: Schema.Types.ObjectId, ref: "Client" },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
-    tenant: { type: Schema.Types.ObjectId, ref: "Tenants" },
+    tenant: { type: Schema.Types.ObjectId, ref: "Tenant" },
 
     accessToken: [String],
   },
