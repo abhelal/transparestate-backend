@@ -8,7 +8,6 @@ const { USER_ROLES } = require("../constants");
 exports.updateTenantInfo = async (req, res) => {
   try {
     const userId = req.params.id;
-
     const tenantSchema = Joi.object({
       birthDate: Joi.string(),
       job: Joi.string(),
@@ -50,28 +49,14 @@ exports.updateTenantInfo = async (req, res) => {
   }
 };
 
-exports.updateTenantHome = async (req, res) => {
+exports.updateTenantApartment = async (req, res) => {
   try {
-    const id = req.params.id;
-    const requester = await User.findOne({ userId: req.userId });
-
-    if (!requester) {
-      return res.status(403).json({
-        message: "You are not authorized to view properties",
-      });
-    }
-
+    const userId = req.params.userId;
     const schema = Joi.object({
-      properties: Joi.array().items(Joi.object().keys({ _id: Joi.string().required() })),
-      apartment: Joi.object().keys({
-        _id: Joi.string().required(),
-        apartmentId: Joi.string().required(),
-      }),
+      apartmentId: Joi.string().required(),
       leaseStartDate: Joi.string().required(),
-      leaseEndDate: Joi.string().required(),
       rent: Joi.number().required(),
       deposit: Joi.number().required(),
-      lateFee: Joi.number().required(),
     }).options({ stripUnknown: true, abortEarly: false });
 
     const { error, value } = schema.validate(req.body);
@@ -83,9 +68,9 @@ exports.updateTenantHome = async (req, res) => {
       });
     }
 
-    const { properties, apartment, leaseStartDate, leaseEndDate, rent, deposit, lateFee } = value;
+    const { apartmentId, leaseStartDate, rent, deposit } = value;
 
-    const tenant = await User.findOne({ userId: id, client: requester.client });
+    const tenant = await User.findOne({ userId, client: req.client });
 
     if (!tenant) {
       return res.status(409).json({
@@ -94,34 +79,70 @@ exports.updateTenantHome = async (req, res) => {
       });
     }
 
-    const apartmentData = await Apartment.findOne({ apartmentId: apartment.apartmentId });
+    const apartment = await Apartment.findOne({ apartmentId, client: req.client });
 
-    if (!apartmentData) {
+    if (!apartment) {
       return res.status(409).json({
         success: false,
         message: "Apartment not found",
       });
     }
 
-    const oldApartment = await Apartment.findById(tenant.apartments[0]);
-
-    if (oldApartment) {
-      oldApartment.tenant = null;
-      await oldApartment.save();
+    if (apartment.tenant && apartment.tenant.toString() !== tenant._id.toString()) {
+      return res.status(409).json({
+        success: false,
+        message: "Apartment already occupied",
+      });
     }
 
-    tenant.properties = properties.map((prop) => prop._id);
-    tenant.apartments = [apartmentData._id];
-    apartmentData.tenant = tenant._id;
-    apartmentData.leaseStartDate = leaseStartDate;
-    apartmentData.leaseEndDate = leaseEndDate;
-    apartmentData.rent = rent;
-    apartmentData.deposit = deposit;
-    apartmentData.lateFee = lateFee;
+    apartment.tenant = tenant._id;
+    apartment.leaseStartDate = leaseStartDate;
+    apartment.rent = rent;
+    apartment.deposit = deposit;
 
-    await apartmentData.save();
+    await apartment.save();
+
+    tenant.apartments = tenant.apartments.includes(apartment._id) ? tenant.apartments : [...tenant.apartments, apartment._id];
+    tenant.properties = tenant.properties.includes(apartment.property) ? tenant.properties : [...tenant.properties, apartment.property];
+
     await tenant.save();
-    return res.status(201).json({ message: "Tenant home updated successfully" });
+
+    return res.status(201).json({ message: "Tenant apartment updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.deleteTenantApartment = async (req, res) => {
+  try {
+    const { userId, apartmentId } = req.params;
+    const tenant = await User.findOne({ userId, client: req.client });
+    const apartment = await Apartment.findOne({ apartmentId, client: req.client });
+
+    if (!tenant || !apartment) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant or Apartment not found",
+      });
+    }
+
+    tenant.apartments = tenant.apartments.filter((id) => id.toString() !== apartment._id.toString());
+    await tenant.save();
+
+    apartment.tenant = null;
+    apartment.leaseStartDate = null;
+    apartment.rent = null;
+    apartment.deposit = null;
+    await apartment.save();
+
+    const tenantApartments = await Apartment.find({ tenant: tenant._id, property: apartment.property });
+
+    if (tenantApartments.length === 0) {
+      tenant.properties = tenant.properties.filter((id) => id.toString() !== apartment.property.toString());
+      await tenant.save();
+    }
+
+    return res.status(201).json({ message: "Tenant apartment removed successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

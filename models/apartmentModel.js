@@ -51,9 +51,6 @@ const apartmentSchema = new Schema(
     deposit: {
       type: Number,
     },
-    lateFee: {
-      type: Number,
-    },
     archived: {
       type: Boolean,
       default: false,

@@ -16,6 +16,7 @@ router.put("/:id/utilities", catchErrors(propertyController.updateUtilities));
 router.put("/:id/allowpets", catchErrors(propertyController.allowPets));
 
 router.post("/:id/apartments/create", catchErrors(propertyController.createApartment));
+router.get("/:propertyId/apartments", catchErrors(propertyController.getApartments));
 router.get("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.getApartment));
 router.put("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.updateApartment));
 router.delete("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.deleteApartment));

@@ -115,6 +115,13 @@ exports.fetchUser = async ({ userId, client, role }) => {
     .populate("client")
     .populate("tenant")
     .populate("properties", "name propertyId")
+    .populate({
+      path: "apartments",
+      populate: {
+        path: "property",
+        select: "name propertyId",
+      },
+    })
     .lean();
   return {
     success: true,

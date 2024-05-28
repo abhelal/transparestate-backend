@@ -112,8 +112,7 @@ exports.getProperties = async (req, res) => {
 exports.getProperty = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findOne({ userId: req.userId });
-    const property = await Property.findOne({ propertyId: id, company: user.company })
+    const property = await Property.findOne({ propertyId: id, client: req.client })
       .populate("managers", "name email")
       .populate("maintainers", "name email")
       .populate("janitors", "name email")
@@ -406,6 +405,29 @@ exports.createApartment = async (req, res) => {
       success: true,
       message: "Apartment created successfully",
       apartment,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getApartments = async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    const property = await Property.findOne({ propertyId, client: req.client }).populate("apartments").lean();
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      apartments: property.apartments,
     });
   } catch (error) {
     res.status(400).json({
