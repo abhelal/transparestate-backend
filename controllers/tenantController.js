@@ -4,10 +4,12 @@ const Apartment = require("../models/apartmentModel");
 
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
+const { deleteFile } = require("../services/storage");
 
 exports.updateTenantInfo = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.params.userId;
+
     const tenantSchema = Joi.object({
       birthDate: Joi.string(),
       job: Joi.string(),
@@ -143,6 +145,80 @@ exports.deleteTenantApartment = async (req, res) => {
     }
 
     return res.status(201).json({ message: "Tenant apartment removed successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.createTenantDocument = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { name, documentCategory, note } = req.body;
+
+    const { file } = req;
+
+    const user = await User.findOne({ userId, client: req.client });
+
+    if (!user) {
+      return res.status(409).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!file) {
+      return res.status(409).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    const document = {
+      name,
+      documentCategory,
+      note,
+      originalname: file.originalname,
+      key: file.key,
+      url: file.location,
+    };
+
+    const tenant = await Tenant.findOne({ userId });
+    tenant.documents.push(document);
+    await tenant.save();
+
+    return res.status(201).json({ message: "Document created successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.deleteTenantDocument = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { Key } = req.params;
+    const user = await User.findOne({ userId, client: req.client });
+
+    if (!user) {
+      return res.status(409).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const tenant = await Tenant.findOne({ userId });
+
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
+    tenant.documents = tenant.documents.filter((doc) => doc.key !== Key);
+    await tenant.save();
+
+    await deleteFile(Key);
+
+    return res.status(201).json({ message: "Document deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

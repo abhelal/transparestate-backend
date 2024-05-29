@@ -14,6 +14,7 @@ const maintainerRoutes = require("./maintainerRoutes");
 const janitorRoutes = require("./janitorRoutes");
 const tenantRoutes = require("./tenantRoutes");
 const maintenanceRoutes = require("./maintenanceRoutes");
+const storageRoutes = require("./storageRoutes");
 
 // :: Prefix Path ---  '/api/v1'
 
@@ -27,5 +28,6 @@ router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.CLIENT]), maint
 router.use("/janitors", protectRoute, allowAccess([USER_ROLES.CLIENT]), janitorRoutes);
 router.use("/tenants", protectRoute, tenantRoutes);
 router.use("/maintenance", protectRoute, maintenanceRoutes);
+router.use("/storage", protectRoute, storageRoutes);
 
 module.exports = router;
