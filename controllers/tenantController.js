@@ -223,3 +223,34 @@ exports.deleteTenantDocument = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+exports.getMyApartment = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const tenant = await User.findOne({ userId, client: req.client }).populate({
+      path: "apartments",
+      populate: {
+        path: "property",
+        select: "name",
+      },
+    });
+
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
+    const apartments = tenant.apartments.map((apartment) => ({
+      apartmentId: apartment.apartmentId,
+      property: apartment.property,
+      floor: apartment.floor,
+      door: apartment.door,
+    }));
+
+    return res.status(200).json({ success: true, apartments });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};

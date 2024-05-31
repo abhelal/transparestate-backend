@@ -44,12 +44,7 @@ const maintenanceSchema = new Schema(
 
     maintenanceStatus: {
       type: String,
-      enum: [
-        MAINTENANCE_STATUS.PENDING,
-        MAINTENANCE_STATUS.INPROGRESS,
-        MAINTENANCE_STATUS.COMPLETED,
-        MAINTENANCE_STATUS.CANCELLED,
-      ],
+      enum: Object.keys(MAINTENANCE_STATUS),
       default: MAINTENANCE_STATUS.PENDING,
     },
   },

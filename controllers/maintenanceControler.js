@@ -2,9 +2,11 @@ const User = require("../models/userModel");
 const Maintenance = require("../models/maintenanceModel");
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
+const Apartment = require("../models/apartmentModel");
 
 exports.createMaintenance = async (req, res) => {
   const schema = Joi.object({
+    apartmentId: Joi.string().required(),
     maintenanceType: Joi.string().required(),
     maintenanceDetails: Joi.string().required(),
   }).options({ stripUnknown: true, abortEarly: false });
@@ -18,19 +20,15 @@ exports.createMaintenance = async (req, res) => {
     });
   }
 
-  const tenant = await User.findOne({ userId: req.userId })
-    .select("-password -accessToken")
-    .populate("apartments");
+  const { apartmentId, maintenanceType, maintenanceDetails } = value;
 
-  const apartment = tenant.apartments[0];
-
-  const { maintenanceType, maintenanceDetails } = value;
+  const apartment = await Apartment.findOne({ apartmentId, client: req.client });
 
   const newMaintenance = new Maintenance({
-    client: tenant.client,
+    client: apartment.client,
     property: apartment.property,
     apartment: apartment._id,
-    tenant: tenant._id,
+    tenant: apartment.tenant,
     maintenanceType,
     maintenanceDetails,
   });

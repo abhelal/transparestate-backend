@@ -12,4 +12,7 @@ router.post("/create/document/:userId", uploadFile.single("documentFile"), catch
 router.delete("/delete/document/:userId/:Key", catchErrors(tenantController.deleteTenantDocument));
 router.delete("/delete/apartment/:userId/:apartmentId", catchErrors(tenantController.deleteTenantApartment));
 
+// tenants routes
+router.get("/myapartment", catchErrors(tenantController.getMyApartment));
+
 module.exports = router;
