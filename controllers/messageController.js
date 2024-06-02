@@ -1,0 +1,70 @@
+const { USER_ROLES } = require("../constants");
+const Conversation = require("../models/ConversationModel");
+const Message = require("../models/MessageModel");
+const Maintenance = require("../models/maintenanceModel");
+const User = require("../models/userModel");
+
+exports.getConversations = async (req, res) => {
+  let query = {
+    client: req.client,
+  };
+
+  if (req.role === USER_ROLES.CLIENT) {
+    query.tenant = req.user.id;
+  }
+
+  if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
+    const staff = await User.findById(req.user.id);
+    const properties = staff.properties;
+    query.property = { $in: properties };
+  }
+
+  const conversations = await Conversation.find(query)
+    .populate("property", "name")
+    .populate("maintenance", "maintenanceType")
+    .sort("-updatedAt");
+  res.status(200).json({ conversations });
+};
+
+exports.getMessages = async (req, res) => {
+  const { conversationId } = req.params;
+  const messages = await Conversation.findOne({ conversationId })
+    .populate("messages")
+    .populate("property", "name")
+    .populate("tenant", "name");
+  res.status(200).json(messages);
+};
+
+exports.sendMessage = async (req, res) => {
+  const { user } = req;
+  const { conversationId } = req.params;
+  const { text, image, file } = req.body;
+  const message = await Message.create({
+    sender: user._id,
+    conversationId,
+    text,
+    image,
+    file,
+  });
+  const conversation = await Conversation.findById(conversationId);
+  conversation.messages.push(message._id);
+  await conversation.save();
+  res.status(200).json({ message });
+};
+
+exports.startConversation = async (req, res) => {
+  const { maintenanceId } = req.params;
+  const conversation = await Conversation.findOne({ maintenanceId });
+  if (!conversation) {
+    const maintenance = await Maintenance.findOne({ maintenanceId });
+    const newConversation = await Conversation.create({
+      maintenanceId: maintenance.maintenanceId,
+      client: maintenance.client,
+      property: maintenance.property,
+      tenant: maintenance.tenant,
+      maintenance: maintenance._id,
+    });
+    return res.status(200).json({ conversationId: newConversation.conversationId });
+  }
+  res.status(200).json({ conversationId: conversation.conversationId });
+};
