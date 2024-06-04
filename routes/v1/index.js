@@ -16,6 +16,7 @@ const tenantRoutes = require("./tenantRoutes");
 const maintenanceRoutes = require("./maintenanceRoutes");
 const storageRoutes = require("./storageRoutes");
 const messageRoutes = require("./messageRoutes");
+const dashboardRoutes = require("./dashboardRoutes");
 
 // :: Prefix Path ---  '/api/v1'
 
@@ -31,5 +32,6 @@ router.use("/tenants", protectRoute, tenantRoutes);
 router.use("/maintenance", protectRoute, maintenanceRoutes);
 router.use("/storage", protectRoute, storageRoutes);
 router.use("/messages", protectRoute, messageRoutes);
+router.use("/dashboard", protectRoute, dashboardRoutes);
 
 module.exports = router;

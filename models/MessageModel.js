@@ -13,6 +13,8 @@ const messageSchema = new Schema(
         return nanoid();
       },
     },
+    conversation: { type: Schema.Types.ObjectId, ref: "Conversation" },
+    conversationId: { type: String },
     sender: { type: Schema.Types.ObjectId, ref: "User" },
     senderId: { type: String },
     senderRole: { type: String, enum: Object.keys(USER_ROLES) },

@@ -19,9 +19,16 @@ exports.getConversations = async (req, res) => {
     query.property = { $in: properties };
   }
 
+  console.log("reqiuest made");
+
   const conversations = await Conversation.find(query)
     .populate("property", "name")
-    .populate("maintenance", "maintenanceType")
+    .populate("maintenance", "maintenanceType maintenanceDetails")
+    .populate({
+      path: "messages",
+      options: { sort: { createdAt: -1 } },
+      perDocumentLimit: 1,
+    })
     .sort("-updatedAt");
   res.status(200).json({ conversations });
 };
@@ -29,7 +36,10 @@ exports.getConversations = async (req, res) => {
 exports.getMessages = async (req, res) => {
   const { conversationId } = req.params;
   const messages = await Conversation.findOne({ conversationId })
-    .populate("messages")
+    .populate({
+      path: "messages",
+      options: { sort: { createdAt: -1 } },
+    })
     .populate("property", "name")
     .populate("tenant", "name");
   res.status(200).json(messages);

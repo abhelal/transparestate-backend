@@ -44,15 +44,16 @@ function initialize(server) {
   });
 
   io.on("connection", async (socket) => {
-    console.log("Socket user", socket.userId ? socket.userId : socket.id, "connected");
-    onlineUsers[socket.userId] = socket.id;
+    console.log("Socket user", socket.userId ? socket.user.id : socket.id, "connected");
 
     socket.on("disconnect", () => {
-      console.log("Socket user", socket.userId ? socket.userId : socket.id, "disconnected");
-      delete onlineUsers[socket.userId];
+      console.log("Socket user", socket.userId ? socket.user.id : socket.id, "disconnected");
+      if (!socket.userId) return;
+      delete onlineUsers[socket.user.id];
     });
 
     if (!socket.userId) return;
+    onlineUsers[socket.user.id] = socket.id;
 
     const connectedUser = await User.findById(socket.user.id);
 
@@ -79,6 +80,8 @@ function initialize(server) {
         const conversation = await Conversation.findOne({ conversationId });
         if (!conversation) return;
         const message = await Message.create({
+          conversation: conversation._id,
+          conversationId,
           sender,
           senderId: socket.userId,
           senderRole: socket.user.role,
@@ -88,6 +91,7 @@ function initialize(server) {
         });
         conversation.messages.push(message._id);
         await conversation.save();
+        io.to(onlineUsers[conversation.tenant]).to(`property-room-${conversation.property}`).emit("newMessage", message);
       } catch (error) {
         console.error("Error in sendNewMessage:", error);
       }
