@@ -9,7 +9,7 @@ exports.getConversations = async (req, res) => {
     client: req.client,
   };
 
-  if (req.role === USER_ROLES.CLIENT) {
+  if (req.role === USER_ROLES.TENANT) {
     query.tenant = req.user.id;
   }
 
@@ -18,8 +18,6 @@ exports.getConversations = async (req, res) => {
     const properties = staff.properties;
     query.property = { $in: properties };
   }
-
-  console.log("reqiuest made");
 
   const conversations = await Conversation.find(query)
     .populate("property", "name")
