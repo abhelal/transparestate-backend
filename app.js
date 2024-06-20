@@ -46,7 +46,7 @@ const initializeApplication = async () => {
 
   connection.once("open", async () => {
     console.log("MongoDB database connection established successfully");
-    // await createSuperAdmin();
+    await createSuperAdmin();
   });
 
   connection.on("error", (err) => {

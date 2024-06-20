@@ -26,17 +26,18 @@ function initialize(server) {
     try {
       const request = socket.request;
       const cookies = request.headers.cookie;
+      if (!cookies) return next();
       const parsedCookies = cookieParser.parse(cookies);
       const accessToken = parsedCookies.accessToken;
-      if (accessToken) {
-        const secret = process.env.JWT_SECRET;
-        const user = jwt.verify(accessToken, secret);
-        const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
-        if (user && isValid) {
-          socket.userId = user.userId;
-          socket.user = user;
-        }
+      if (!accessToken) return next();
+      const secret = process.env.JWT_SECRET;
+      const user = jwt.verify(accessToken, secret);
+      const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
+      if (user && isValid) {
+        socket.userId = user.userId;
+        socket.user = user;
       }
+
       next();
     } catch (error) {
       console.log(error);
