@@ -10,7 +10,7 @@ const devRoutes = require("./devRoutes");
 // :: Prefix Path ---  '/api'
 
 router.use("/v1", v1Routes);
-router.use("/v2", catchErrors(v2Routes));
-router.use("/dev", catchErrors(devRoutes));
+router.use("/v2", v2Routes);
+router.use("/dev", devRoutes);
 
 module.exports = router;

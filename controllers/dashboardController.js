@@ -6,29 +6,48 @@ const { USER_ROLES } = require("../constants");
 
 exports.getClientDashboardData = async (req, res) => {
   try {
-    const { role, userId, client } = req;
+    const { role, client } = req;
 
     if (role !== USER_ROLES.CLIENT) return res.status(403).json({ success: false, message: "Unauthorized" });
 
-    const properties = await Properties.find({ client }).lean();
-    const propertiesCount = properties.length;
+    const totalProperties = await Properties.countDocuments({ client });
+    const totalApartments = await Apartment.countDocuments({ client });
+    const rentedApartments = await Apartment.countDocuments({ client, tenant: { $ne: null } });
+    const freeApartments = totalApartments - rentedApartments;
 
-    const PropertyCreatedSinceLastMonth = await Properties.find({
-      client,
-      createdAt: { $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) },
-    }).lean();
+    const totalMaintenances = await Maintenance.countDocuments({ client });
+    const maintenanceInProgress = await Maintenance.countDocuments({ client, maintenanceStatus: "INPROGRESS" });
+    const maintenanceCompleted = await Maintenance.countDocuments({ client, maintenanceStatus: "COMPLETED" });
+    const maintenancePending = await Maintenance.countDocuments({ client, maintenanceStatus: "PENDING" });
+    const maintenanceCancelled = await Maintenance.countDocuments({ client, maintenanceStatus: "CANCELLED" });
 
-    const propertyIncreasedPercent = ((PropertyCreatedSinceLastMonth.length / propertiesCount) * 100).toFixed(2);
+    const pendingPercentage = (maintenancePending / totalMaintenances) * 100;
+    const inProgressPercentage = (maintenanceInProgress / totalMaintenances) * 100;
+    const completedPercentage = (maintenanceCompleted / totalMaintenances) * 100;
+    const cancelledPercentage = (maintenanceCancelled / totalMaintenances) * 100;
 
     res.status(200).json({
       success: true,
-      propertiesCount,
+      totalProperties,
+      totalApartments,
+      rentedApartments,
+      freeApartments,
+      totalMaintenances,
+      maintenanceInProgress,
+      maintenanceCompleted,
+      maintenancePending,
+      maintenanceCancelled,
+      pendingPercentage,
+      inProgressPercentage,
+      completedPercentage,
+      cancelledPercentage,
     });
   } catch (error) {
     console.error("Error in getClientDashboardData:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
 exports.getManagerDashboardData = async (req, res) => {
   try {
     const { user } = req;
