@@ -2,22 +2,12 @@ const Property = require("../models/propertyModel");
 const Apartment = require("../models/apartmentModel");
 const User = require("../models/userModel");
 const Joi = require("joi");
-const { USER_ROLES } = require("../constants");
-const client = require("../config/redis");
 
 // create Property
 
 exports.createProperty = async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.userId });
-
-    if (!user || user.role !== USER_ROLES.CLIENT || user.status !== "ACTIVE") {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to create a property",
-      });
-    }
-
     const schema = Joi.object({
       propertyType: Joi.string().required(),
       name: Joi.string().required(),

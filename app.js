@@ -37,8 +37,8 @@ app.use(errorHandlers.productionErrors);
 
 const initializeApplication = async () => {
   app.set("port", process.env.PORT || 8888);
-
   socket.initialize(server);
+
   await client.connect();
   server.listen(app.get("port"), () => {
     console.log(`Application running → On PORT : ${server.address().port}`);

@@ -19,6 +19,7 @@ const protectRoute = async (req, res, next) => {
 
       if (user && isValid) {
         req.user = user;
+        req.id = user.id;
         req.userId = user.userId;
         req.role = user.role;
         req.client = user.client;
@@ -52,8 +53,7 @@ const protectRoute = async (req, res, next) => {
 
 const allowAccess = (roles = []) => {
   return (req, res, next) => {
-    if (!roles.includes(req.role))
-      return res.status(401).json({ message: "Sorry you are not authorized" });
+    if (!roles.includes(req.role)) return res.status(401).json({ message: "Sorry you are not authorized" });
     next();
   };
 };
