@@ -17,6 +17,7 @@ const notificationSchema = new Schema(
       required: true,
     },
     date: { type: Date, required: true },
+    dateEvent: { type: Boolean, default: false },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     title: { type: String, required: true },
     body: { type: String, required: true },

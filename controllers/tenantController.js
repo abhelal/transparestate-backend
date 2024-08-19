@@ -1,10 +1,12 @@
 const User = require("../models/userModel");
 const Tenant = require("../models/tenantModel");
 const Apartment = require("../models/apartmentModel");
+const Bill = require("../models/billsModel");
 
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
 const { deleteFile } = require("../services/storage");
+const { generateNewTenantBill } = require("../services/bills");
 
 exports.updateTenantInfo = async (req, res) => {
   try {
@@ -47,6 +49,71 @@ exports.updateTenantInfo = async (req, res) => {
     return res.status(201).json({ message: "Tenant updated successfully" });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.addTenantApartment = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const schema = Joi.object({
+      apartmentId: Joi.string().required(),
+      leaseStartDate: Joi.string().required(),
+      rent: Joi.number().required(),
+      deposit: Joi.number().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = schema.validate(req.body);
+
+    if (error) {
+      return res.status(409).json({
+        success: false,
+        message: error.details.map((err) => err.message),
+      });
+    }
+
+    const { apartmentId, leaseStartDate, rent, deposit } = value;
+
+    const tenant = await User.findOne({ userId, client: req.client });
+
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
+    const apartment = await Apartment.findOne({ apartmentId, client: req.client });
+
+    if (!apartment) {
+      return res.status(409).json({
+        success: false,
+        message: "Apartment not found",
+      });
+    }
+
+    if (apartment.tenant && apartment.tenant.toString() !== tenant._id.toString()) {
+      return res.status(409).json({
+        success: false,
+        message: "Apartment already occupied",
+      });
+    }
+
+    apartment.tenant = tenant._id;
+    apartment.leaseStartDate = leaseStartDate;
+    apartment.rent = rent;
+    apartment.deposit = deposit;
+
+    await apartment.save();
+
+    tenant.apartments = tenant.apartments.includes(apartment._id) ? tenant.apartments : [...tenant.apartments, apartment._id];
+    tenant.properties = tenant.properties.includes(apartment.property) ? tenant.properties : [...tenant.properties, apartment.property];
+
+    await tenant.save();
+    await generateNewTenantBill({ apartmentId });
+    return res.status(201).json({ message: "Tenant apartment added successfully" });
+  } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
@@ -250,6 +317,26 @@ exports.getMyApartment = async (req, res) => {
     }));
 
     return res.status(200).json({ success: true, apartments });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getMyBills = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const tenant = await User.findOne({ userId, client: req.client });
+
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
+    const bills = await Bill.find({ tenant: tenant._id });
+
+    return res.status(200).json({ success: true, bills: bills });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

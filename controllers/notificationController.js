@@ -2,10 +2,11 @@ const Notification = require("../models/notificationModel");
 
 exports.createNotification = async (req, res) => {
   try {
-    const { date, properties, title, body } = req.body;
+    const { date, dateEvent, properties, title, body } = req.body;
     await Notification.create({
       client: req.client,
       date,
+      dateEvent,
       properties,
       title,
       body,
