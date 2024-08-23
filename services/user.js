@@ -34,7 +34,7 @@ exports.fetchClient = async (id) => {
   const client = await User.findOne({ userId: id, role: USER_ROLES.CLIENT })
     .select("-_id -__v -password -accessToken -refreshToken")
     .populate("client", "-__v -_id -createdAt -updatedAt")
-    .populate("properties", "-_id name")
+    .populate("properties", "-_id name city street buildingNo country zipCode")
     .lean();
   return {
     success: true,

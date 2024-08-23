@@ -66,6 +66,11 @@ const userSchema = new Schema(
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenant" },
     accessToken: [String],
+    street: String,
+    buildingNo: String,
+    zipCode: String,
+    city: String,
+    country: String,
   },
   {
     timestamps: true,

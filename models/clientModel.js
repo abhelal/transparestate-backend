@@ -17,15 +17,6 @@ const clientSchema = new Schema(
     subscriptionValidUntil: {
       type: Date,
     },
-    contactNumber: {
-      type: String,
-    },
-    address: {
-      type: String,
-    },
-    country: {
-      type: String,
-    },
   },
   {
     timestamps: true,

@@ -9,7 +9,6 @@ const couponRoutes = require("./couponRoutes");
 
 const subscriptionRoutes = require("./subscriptionRoutes");
 const propertyRoutes = require("./propertyRoutes");
-const managerRoutes = require("./managerRoutes");
 const maintainerRoutes = require("./maintainerRoutes");
 const janitorRoutes = require("./janitorRoutes");
 const tenantRoutes = require("./tenantRoutes");
@@ -20,6 +19,8 @@ const dashboardRoutes = require("./dashboardRoutes");
 const contentRoures = require("./contentRoutes");
 const utilityRoutes = require("./utilityRoutes");
 const notificationRoutes = require("./notificationRoutes");
+const billRoutes = require("./billRoutes");
+const reportRoutes = require("./reportRoutes");
 
 // :: Prefix Path ---  '/api/v1'
 
@@ -28,7 +29,6 @@ router.use("/user", protectRoute, userRoutes);
 router.use("/coupons", protectRoute, couponRoutes);
 router.use("/subscription", protectRoute, subscriptionRoutes);
 router.use("/properties", protectRoute, propertyRoutes);
-router.use("/managers", protectRoute, allowAccess([USER_ROLES.CLIENT]), managerRoutes);
 router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.CLIENT]), maintainerRoutes);
 router.use("/janitors", protectRoute, allowAccess([USER_ROLES.CLIENT]), janitorRoutes);
 router.use("/tenants", protectRoute, tenantRoutes);
@@ -39,5 +39,7 @@ router.use("/dashboard", protectRoute, dashboardRoutes);
 router.use("/content", contentRoures);
 router.use("/utility", protectRoute, utilityRoutes);
 router.use("/notification", protectRoute, notificationRoutes);
+router.use("/bills", protectRoute, billRoutes);
+router.use("/reports", protectRoute, reportRoutes);
 
 module.exports = router;

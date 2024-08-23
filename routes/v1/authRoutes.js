@@ -13,5 +13,8 @@ router.post("/logout", protectRoute, catchErrors(authControler.logout));
 router.post("/logout-others", protectRoute, catchErrors(authControler.logoutOthers));
 router.post("/logout-all", protectRoute, catchErrors(authControler.logoutAll));
 router.get("/me", protectRoute, catchErrors(authControler.me));
+router.get("/address", protectRoute, catchErrors(authControler.getAddress));
+router.post("/update-password", protectRoute, catchErrors(authControler.updatePassword));
+router.post("/update-address", protectRoute, catchErrors(authControler.updateAddress));
 
 module.exports = router;

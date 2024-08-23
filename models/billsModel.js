@@ -1,4 +1,3 @@
-const { required } = require("joi");
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { customAlphabet } = require("nanoid");
@@ -44,6 +43,7 @@ const billSchema = new Schema(
       default: "unpaid",
       enum: ["paid", "unpaid"],
     },
+    paymentDate: { type: Date },
   },
   { timestamps: true }
 );

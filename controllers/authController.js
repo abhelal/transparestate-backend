@@ -208,10 +208,111 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  console.log(req.userId);
   return res.status(200).json({
     success: true,
     message: "User details",
     user: req.user,
+  });
+};
+
+exports.getAddress = async (req, res) => {
+  const user = await User.findOne({ userId: req.userId });
+
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "User address",
+    address: {
+      contactNumber: user.contactNumber,
+      street: user.street,
+      buildingNo: user.buildingNo,
+      zipCode: user.zipCode,
+      city: user.city,
+      country: user.country,
+    },
+  });
+};
+
+exports.updatePassword = async (req, res) => {
+  const { currentPassword, newPassword, confirmNewPassword } = req.body;
+  const user = await User.findOne({ userId: req.userId });
+
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
+  const isMatch = await user.verifyPassword(currentPassword);
+
+  if (!isMatch) {
+    return res.status(409).json({
+      success: false,
+      message: "Incorrect current password",
+    });
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    return res.status(409).json({
+      success: false,
+      message: "Password mismatch",
+    });
+  }
+
+  user.password = newPassword;
+  await user.save();
+  return res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
+  });
+};
+
+exports.updateAddress = async (req, res) => {
+  const objectSchema = Joi.object({
+    contactNumber: Joi.string().required(),
+    street: Joi.string().required(),
+    buildingNo: Joi.string().required(),
+    zipCode: Joi.string().required(),
+    city: Joi.string().required(),
+    country: Joi.string().required(),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error, value } = objectSchema.validate(req.body);
+
+  if (error) {
+    return res.status(409).json({
+      success: false,
+      message: "Invalid form data",
+      errorMessage: error.message,
+    });
+  }
+
+  const user = await User.findOne({ userId: req.userId });
+
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
+  user.contactNumber = value.contactNumber;
+  user.street = value.street;
+  user.buildingNo = value.buildingNo;
+  user.zipCode = value.zipCode;
+  user.city = value.city;
+  user.country = value.country;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Address updated successfully",
   });
 };

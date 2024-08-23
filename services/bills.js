@@ -48,7 +48,9 @@ exports.generateNewTenantBill = async ({ apartmentId }) => {
     year,
     period,
     type: "rent",
-    description: `Monthly rent for ${isFirstHalf ? "first" : "second"} half of ${moment().format("MMMM, YYYY")}`,
+    description: `Monthly rent for ${isFirstHalf ? "first" : "second"} half of ${moment().format("MMMM, YYYY")} for ${
+      apartment.floor
+    }-${apartment.door.toUpperCase()},${apartment.property.name}`,
   });
 
   await monthlyBill.save();
