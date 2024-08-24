@@ -1,4 +1,5 @@
-const { USER_ROLES } = require("../constants");
+const { USER_ROLES, USER_STATUS } = require("../constants");
+const User = require("../models/userModel");
 const {
   fetchAllClients,
   fetchClient,
@@ -26,6 +27,22 @@ exports.getClient = async (req, res) => {
   try {
     const response = await fetchClient(req.params.userId);
     return res.status(200).json(response);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+exports.updateClientStatus = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    user.status = user.status === USER_STATUS.ACTIVE ? USER_STATUS.INACTIVE : USER_STATUS.ACTIVE;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: "Status updated successfully" });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }

@@ -9,6 +9,7 @@ const { USER_ROLES } = require("../../constants");
 
 router.get("/clients", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.getAllClients));
 router.get("/clients/:userId", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.getClient));
+router.put("/clients/status/:userId", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.updateClientStatus));
 
 router.post("/managers", catchErrors(controler.createManager));
 router.get("/managers", catchErrors(controler.getAllManagers));
