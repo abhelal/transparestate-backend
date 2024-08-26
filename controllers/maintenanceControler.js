@@ -43,13 +43,21 @@ exports.createMaintenance = async (req, res) => {
 
 exports.getMaintenances = async (req, res) => {
   const user = await User.findOne({ userId: req.userId });
+  const page = Number(req.query.page) || 1;
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
 
   let query = {};
   if (user.role === USER_ROLES.TENANT) {
     query.tenant = user._id;
   }
 
-  if (user.role === USER_ROLES.MAINTAINER) {
+  if (user.role === USER_ROLES.MAINTAINER || user.role === USER_ROLES.JANITOR) {
     query.property = { $in: user.properties };
   }
 
@@ -58,12 +66,18 @@ exports.getMaintenances = async (req, res) => {
   }
 
   const maintenances = await Maintenance.find(query)
+    .limit(10)
+    .skip((page - 1) * 10)
     .populate("property", "name street buildingNo zipCode city country")
     .populate("apartment", "floor door")
     .sort({ createdAt: -1 });
+
+  const total = await Maintenance.countDocuments(query);
+
   return res.status(200).json({
     success: true,
     maintenances,
+    totalPages: Math.ceil(total / 10),
   });
 };
 

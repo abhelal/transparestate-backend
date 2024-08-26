@@ -48,35 +48,6 @@ exports.updateClientStatus = async (req, res) => {
   }
 };
 
-exports.createManager = async (req, res) => {
-  try {
-    const userData = req.body;
-    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.MANAGER });
-    return res.status(200).json(response);
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-};
-
-exports.getAllManagers = async (req, res) => {
-  try {
-    const response = await fetchUsers({ ...req.query, client: req.client, role: USER_ROLES.MANAGER });
-    return res.status(200).json(response);
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-};
-
-exports.getManager = async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const response = await fetchUser({ userId, client: req.client, role: USER_ROLES.MANAGER });
-    return res.status(200).json(response);
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-};
-
 exports.createMaintainer = async (req, res) => {
   try {
     const userData = req.body;
@@ -147,8 +118,39 @@ exports.createTenant = async (req, res) => {
 
 exports.getAllTenants = async (req, res) => {
   try {
-    const response = await fetchUsers({ ...req.query, client: req.client, role: USER_ROLES.TENANT });
-    return res.status(200).json(response);
+    const user = await User.findOne({ userId: req.userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const searchKey = req.query.query || "";
+    const page = req.query.page || 1;
+
+    let query = {
+      client: user.client,
+      role: USER_ROLES.TENANT,
+      status: { $ne: USER_STATUS.DELETED },
+      $or: [
+        { name: { $regex: searchKey, $options: "i" } },
+        { userId: { $regex: searchKey, $options: "i" } },
+        { email: { $regex: searchKey, $options: "i" } },
+      ],
+    };
+
+    if (user.role === USER_ROLES.MAINTAINER || user.role === USER_ROLES.JANITOR) {
+      query.properties = { $in: user.properties };
+    }
+
+    const users = await User.find(query)
+      .select("-_id -password -accessToken")
+      .populate("client")
+      .populate("properties", "-_id name propertyId")
+      .limit(10)
+      .skip(10 * (page - 1))
+      .sort({ createdAt: -1 });
+
+    const total = await User.find(query).countDocuments();
+
+    return res.status(200).json({ success: true, currentPage: page, totalPages: Math.ceil(total / 10), users });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }

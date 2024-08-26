@@ -1,4 +1,6 @@
 const Notification = require("../models/notificationModel");
+const User = require("../models/userModel");
+const { USER_ROLES } = require("../constants");
 
 exports.createNotification = async (req, res) => {
   try {
@@ -30,8 +32,26 @@ exports.deleteNotification = async (req, res) => {
 exports.getNotificationList = async (req, res) => {
   try {
     const { page = 1 } = req.query;
-    const totalNotifications = await Notification.find({ client: req.client, archived: false }).countDocuments();
-    const notifications = await Notification.find({ client: req.client, archived: false })
+    const user = await User.findOne({ userId: req.userId });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    let query = {
+      client: user.client,
+      archived: false,
+    };
+
+    if (user.role === USER_ROLES.MAINTAINER || user.role === USER_ROLES.JANITOR) {
+      query.properties = { $in: user.properties };
+    }
+
+    const totalNotifications = await Notification.find(query).countDocuments();
+    const notifications = await Notification.find(query)
       .populate("properties", "name")
       .limit(5)
       .skip(5 * (page - 1))

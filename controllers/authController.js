@@ -48,7 +48,7 @@ exports.register = async (req, res) => {
     role: USER_ROLES.CLIENT,
     status: USER_STATUS.NEW,
     client: client._id,
-    permissions: [USER_PERMISSIONS.CREATE_JANITOR, USER_PERMISSIONS.CREATE_TENANT],
+    permissions: [],
   });
 
   await newUser.save();
@@ -72,6 +72,7 @@ exports.register = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        permissions: newUser.permissions,
       },
     });
 };
@@ -135,6 +136,7 @@ exports.login = async (req, res) => {
             email: user.email,
             role: user.role,
             status: user.status,
+            permissions: user.permissions,
           },
         });
     }
@@ -208,10 +210,29 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
+  const user = await User.findOne({ userId: req.userId });
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
   return res.status(200).json({
     success: true,
     message: "User details",
-    user: req.user,
+    user: {
+      id: user._id,
+      userId: user.userId,
+      role: user.role,
+      client: user.client,
+      email: user.email,
+      status: user.status,
+      permissions: user.permissions,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
   });
 };
 

@@ -11,10 +11,6 @@ router.get("/clients", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(control
 router.get("/clients/:userId", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.getClient));
 router.put("/clients/status/:userId", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(controler.updateClientStatus));
 
-router.post("/managers", catchErrors(controler.createManager));
-router.get("/managers", catchErrors(controler.getAllManagers));
-router.get("/managers/:userId", catchErrors(controler.getManager));
-
 router.post("/maintainers", catchErrors(controler.createMaintainer));
 router.get("/maintainers", catchErrors(controler.getAllMaintainers));
 router.get("/maintainers/:userId", catchErrors(controler.getMaintainer));
