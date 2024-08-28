@@ -7,9 +7,7 @@ const { USER_ROLES } = require("../constants");
 
 exports.getClientDashboardData = async (req, res) => {
   try {
-    const { role, client } = req;
-
-    if (role !== USER_ROLES.CLIENT) return res.status(403).json({ success: false, message: "Unauthorized" });
+    const { client } = req;
 
     const totalProperties = await Properties.countDocuments({ client });
     const totalApartments = await Apartment.countDocuments({ client });
@@ -49,39 +47,60 @@ exports.getClientDashboardData = async (req, res) => {
   }
 };
 
-exports.getManagerDashboardData = async (req, res) => {
-  try {
-    const { user } = req;
-    const data = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        properties: user.properties,
-        subscription: user.subscription,
-      },
-    };
-    res.status(200).json({ success: true, data });
-  } catch (error) {
-    console.error("Error in getManagerDashboardData:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
 exports.getMaintainerDashboardData = async (req, res) => {
   try {
-    const { user } = req;
-    const data = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        properties: user.properties,
-        subscription: user.subscription,
-      },
-    };
-    res.status(200).json({ success: true, data });
+    const { client, userId } = req;
+    const user = await User.findOne({ userId });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const totalProperties = user.properties.length;
+    const totalApartments = await Apartment.countDocuments({ client, property: { $in: user.properties } });
+    const rentedApartments = await Apartment.countDocuments({ client, property: { $in: user.properties }, tenant: { $ne: null } });
+    const freeApartments = totalApartments - rentedApartments;
+
+    const totalMaintenances = await Maintenance.countDocuments({ client, property: { $in: user.properties } });
+    const maintenanceInProgress = await Maintenance.countDocuments({
+      client,
+      property: { $in: user.properties },
+      maintenanceStatus: "INPROGRESS",
+    });
+    const maintenanceCompleted = await Maintenance.countDocuments({
+      client,
+      property: { $in: user.properties },
+      maintenanceStatus: "COMPLETED",
+    });
+    const maintenancePending = await Maintenance.countDocuments({
+      client,
+      property: { $in: user.properties },
+      maintenanceStatus: "PENDING",
+    });
+    const maintenanceCancelled = await Maintenance.countDocuments({
+      client,
+      property: { $in: user.properties },
+      maintenanceStatus: "CANCELLED",
+    });
+
+    const pendingPercentage = (maintenancePending / totalMaintenances) * 100;
+    const inProgressPercentage = (maintenanceInProgress / totalMaintenances) * 100;
+    const completedPercentage = (maintenanceCompleted / totalMaintenances) * 100;
+    const cancelledPercentage = (maintenanceCancelled / totalMaintenances) * 100;
+
+    return res.status(200).json({
+      success: true,
+      totalProperties,
+      totalApartments,
+      rentedApartments,
+      freeApartments,
+      totalMaintenances,
+      maintenanceInProgress,
+      maintenanceCompleted,
+      maintenancePending,
+      maintenanceCancelled,
+      pendingPercentage,
+      inProgressPercentage,
+      completedPercentage,
+      cancelledPercentage,
+    });
   } catch (error) {
     console.error("Error in getMaintainerDashboardData:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
