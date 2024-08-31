@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const Client = require("../models/clientModel");
 
 const Joi = require("joi");
-const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
+const { USER_ROLES, USER_STATUS } = require("../constants");
 const client = require("../config/redis");
 
 // register user
@@ -39,7 +39,9 @@ exports.register = async (req, res) => {
     });
   }
 
-  const client = await Client.create({});
+  const client = await Client.create({
+    isSubscribed: false,
+  });
 
   const newUser = new User({
     name,
@@ -73,6 +75,7 @@ exports.register = async (req, res) => {
         email: newUser.email,
         role: newUser.role,
         permissions: newUser.permissions,
+        isSubscribed: client.isSubscribed,
       },
     });
 };
@@ -99,7 +102,7 @@ exports.login = async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ email: email });
+  const user = await User.findOne({ email: email }).populate("client", "isSubscribed");
 
   if (!user) {
     return res.status(409).json({
@@ -137,6 +140,7 @@ exports.login = async (req, res) => {
             role: user.role,
             status: user.status,
             permissions: user.permissions,
+            isSubscribed: user.client.isSubscribed,
           },
         });
     }
@@ -210,7 +214,8 @@ exports.logoutOthers = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-  const user = await User.findOne({ userId: req.userId });
+  const user = await User.findOne({ userId: req.userId }).populate("client", "isSubscribed");
+
   if (!user) {
     return res.status(409).json({
       success: false,
@@ -229,7 +234,7 @@ exports.me = async (req, res) => {
       email: user.email,
       status: user.status,
       permissions: user.permissions,
-      email: user.email,
+      isSubscribed: user.client.isSubscribed,
       firstName: user.firstName,
       lastName: user.lastName,
     },

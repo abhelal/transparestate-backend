@@ -67,6 +67,8 @@ exports.createUserAccount = async ({ userData, client, role }) => {
     ...value,
     role,
     client,
+    permissions: [],
+    status: USER_STATUS.ACTIVE,
   });
 
   await user.save();

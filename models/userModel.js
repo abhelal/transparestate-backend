@@ -60,7 +60,6 @@ const userSchema = new Schema(
       enum: Object.keys(USER_STATUS),
       default: USER_STATUS.NEW,
     },
-
     client: { type: Schema.Types.ObjectId, ref: "Client" },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
