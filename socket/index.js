@@ -57,10 +57,10 @@ function initialize(server) {
     onlineUsers[socket.user.id] = socket.id;
 
     const connectedUser = await User.findById(socket.user.id);
+    if (!connectedUser) return;
 
     if (
       connectedUser.role === USER_ROLES.CLIENT ||
-      connectedUser.role === USER_ROLES.MANAGER ||
       connectedUser.role === USER_ROLES.MAINTAINER ||
       connectedUser.role === USER_ROLES.JANITOR
     ) {

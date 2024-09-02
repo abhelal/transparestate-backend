@@ -140,7 +140,7 @@ exports.login = async (req, res) => {
             role: user.role,
             status: user.status,
             permissions: user.permissions,
-            isSubscribed: user.client.isSubscribed,
+            isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
           },
         });
     }
@@ -234,7 +234,7 @@ exports.me = async (req, res) => {
       email: user.email,
       status: user.status,
       permissions: user.permissions,
-      isSubscribed: user.client.isSubscribed,
+      isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
       firstName: user.firstName,
       lastName: user.lastName,
     },
