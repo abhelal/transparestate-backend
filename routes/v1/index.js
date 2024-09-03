@@ -27,7 +27,7 @@ const reportRoutes = require("./reportRoutes");
 router.use("/auth", authRoutes);
 router.use("/user", protectRoute, userRoutes);
 router.use("/coupons", protectRoute, couponRoutes);
-router.use("/subscription", protectRoute, subscriptionRoutes);
+router.use("/subscription", subscriptionRoutes);
 router.use("/properties", protectRoute, propertyRoutes);
 router.use("/maintainers", protectRoute, allowAccess([USER_ROLES.CLIENT]), maintainerRoutes);
 router.use("/janitors", protectRoute, allowAccess([USER_ROLES.CLIENT]), janitorRoutes);
