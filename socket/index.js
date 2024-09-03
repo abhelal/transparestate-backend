@@ -2,8 +2,8 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const client = require("../config/redis");
 const cookieParser = require("cookie");
-const Message = require("../models/MessageModel");
-const Conversation = require("../models/ConversationModel");
+const Message = require("../models/messageModel");
+const Conversation = require("../models/conversationModel");
 const User = require("../models/userModel");
 const { USER_ROLES } = require("../constants");
 

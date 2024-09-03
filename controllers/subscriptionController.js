@@ -1,9 +1,110 @@
 const User = require("../models/userModel");
 const Coupon = require("../models/couponModel");
 const Client = require("../models/clientModel");
+const SubscriptionPlan = require("../models/subscriptionPlanModel");
 
 const { USER_ROLES, USER_STATUS, COUPON_TYPES } = require("../constants");
 const Joi = require("joi");
+
+exports.getSubscriptionPlans = async (req, res) => {
+  const plans = await SubscriptionPlan.find();
+  return res.status(200).json({ success: true, plans });
+};
+
+exports.createSubscriptionPlan = async (req, res) => {
+  const schema = Joi.object({
+    name: Joi.string().required().messages({
+      "string.empty": "Name is required",
+    }),
+    price: Joi.number().required().messages({
+      "number.base": "Price must be a number",
+      "number.empty": "Price is required",
+    }),
+    duration: Joi.number().required().messages({
+      "number.base": "Duration must be a number",
+      "number.empty": "Duration is required",
+    }),
+    description: Joi.string().required().messages({
+      "string.empty": "Description is required",
+    }),
+    features: Joi.array().items(Joi.string()).required().messages({
+      "array.base": "Features must be an array",
+      "array.empty": "Features is required",
+    }),
+  });
+  const { value, error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const plan = new SubscriptionPlan(value);
+  await plan.save();
+
+  return res.status(200).json({ success: true, message: "Subscription plan created successfully" });
+};
+
+exports.deleteSubscriptionPlan = async (req, res) => {
+  const plan = await SubscriptionPlan.findOneAndDelete({ planId: req.params.id });
+  if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
+
+  return res.status(200).json({ success: true, message: "Subscription plan deleted successfully" });
+};
+
+exports.makePopular = async (req, res) => {
+  const plan = await SubscriptionPlan.findOne({ planId: req.params.id });
+  if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
+  if (plan.isPopular) return res.status(400).json({ message: "Subscription plan is already popular" });
+  if (plan.status === "inactive") return res.status(400).json({ message: "Subscription plan is inactive" });
+
+  await SubscriptionPlan.updateMany({ isPopular: true }, { isPopular: false });
+  plan.set({ isPopular: true });
+  await plan.save();
+
+  return res.status(200).json({ success: true, message: "Subscription plan marked as popular", plan });
+};
+
+exports.deactivateSubscriptionPlan = async (req, res) => {
+  const plan = await SubscriptionPlan.findOne({ planId: req.params.id });
+  if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
+  plan.set({ status: plan.status === "active" ? "inactive" : "active", isPopular: false });
+  await plan.save();
+
+  return res.status(200).json({ success: true, message: "Subscription plan deactivated successfully" });
+};
+
+exports.updateSubscriptionPlan = async (req, res) => {
+  const schema = Joi.object({
+    name: Joi.string().required().messages({
+      "string.empty": "Name is required",
+    }),
+    price: Joi.number().required().messages({
+      "number.base": "Price must be a number",
+      "number.empty": "Price is required",
+    }),
+    duration: Joi.number().required().messages({
+      "number.base": "Duration must be a number",
+      "number.empty": "Duration is required",
+    }),
+    description: Joi.string().required().messages({
+      "string.empty": "Description is required",
+    }),
+    features: Joi.array().items(Joi.string()).required().messages({
+      "array.base": "Features must be an array",
+      "array.empty": "Features is required",
+    }),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { value, error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const plan = await SubscriptionPlan.findOneAndUpdate({ planId: req.params.id }, value, { new: true });
+  if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
+
+  return res.status(200).json({ success: true, message: "Subscription plan updated successfully" });
+};
+
+exports.getPlans = async (req, res) => {
+  const plans = await SubscriptionPlan.find({ status: "active" });
+  return res.status(200).json({ success: true, plans });
+};
 
 exports.activeSubscription = async (req, res) => {
   const schema = Joi.object({

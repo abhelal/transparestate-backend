@@ -1,6 +1,6 @@
 const { USER_ROLES } = require("../constants");
-const Conversation = require("../models/ConversationModel");
-const Message = require("../models/MessageModel");
+const Conversation = require("../models/conversationModel");
+const Message = require("../models/messageModel");
 const Maintenance = require("../models/maintenanceModel");
 const User = require("../models/userModel");
 

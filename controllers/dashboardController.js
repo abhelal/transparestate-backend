@@ -2,7 +2,7 @@ const Properties = require("../models/propertyModel");
 const User = require("../models/userModel");
 const Maintenance = require("../models/maintenanceModel");
 const Apartment = require("../models/apartmentModel");
-const Conversation = require("../models/ConversationModel");
+const Conversation = require("../models/conversationModel");
 const { USER_ROLES } = require("../constants");
 
 exports.getClientDashboardData = async (req, res) => {
