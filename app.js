@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 let corsOptions = {
-  origin: [process.env.PORTAL],
+  origin: [process.env.PORTAL, process.env.PORTAL_WWW],
   credentials: true,
 };
 

@@ -13,7 +13,7 @@ let onlineUsers = {};
 function initialize(server) {
   io = new Server(server, {
     cors: {
-      origin: [process.env.PORTAL],
+      origin: [process.env.PORTAL, process.env.PORTAL_WWW],
       credentials: true,
     },
   });

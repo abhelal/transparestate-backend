@@ -2,7 +2,7 @@ const express = require("express");
 const router = express();
 const { catchErrors } = require("../../handlers/errorHandlers");
 const subscriptionController = require("../../controllers/subscriptionController");
-const { allowAccess } = require("../../middleware/authMiddleware");
+const { allowAccess, protectRoute } = require("../../middleware/authMiddleware");
 const { USER_ROLES } = require("../../constants");
 
 // :: Prefix Path ---  '/api/v1/subscription'
@@ -14,7 +14,7 @@ router.delete("/plan/:id", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(sub
 router.put("/plan/make-popular/:id", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.makePopular));
 router.put("/plan/deactivate/:id", allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.deactivateSubscriptionPlan));
 
-router.post("/active", allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeSubscription));
+router.post("/active", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeSubscription));
 
 router.get("/plans", catchErrors(subscriptionController.getPlans));
 
