@@ -6,7 +6,10 @@ const protectRoute = async (req, res, next) => {
   try {
     console.log("protectRoute - server middleware called");
     const { accessToken } = req.cookies;
+
+    console.log("protectRoute - accessToken", accessToken);
     if (!accessToken) {
+      console.log("protectRoute - no access token");
       return res.status(401).json({
         success: false,
         message: "No Access Token! Sorry you are not authorized",
@@ -45,6 +48,7 @@ const protectRoute = async (req, res, next) => {
       }
     }
   } catch (error) {
+    console.log("protectRoute - error", error);
     return res.status(401).clearCookie("accessToken").json({
       success: false,
       message: "Sorry you are not authorized",
