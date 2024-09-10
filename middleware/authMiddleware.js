@@ -5,7 +5,7 @@ const client = require("../config/redis");
 const protectRoute = async (req, res, next) => {
   try {
     console.log("protectRoute - server middleware called");
-    const { accessToken } = req.cookies;
+    const accessToken = req.cookies?.accessToken || req.headers?.authorization?.split(" ")[1] || null;
 
     console.log("protectRoute - accessToken", accessToken);
     if (!accessToken) {
