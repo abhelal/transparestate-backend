@@ -7,7 +7,7 @@ const { USER_ROLES, USER_STATUS, COUPON_TYPES } = require("../constants");
 const Joi = require("joi");
 
 exports.getSubscriptionPlans = async (req, res) => {
-  const plans = await SubscriptionPlan.find();
+  const plans = await SubscriptionPlan.find({});
   return res.status(200).json({ success: true, plans });
 };
 
