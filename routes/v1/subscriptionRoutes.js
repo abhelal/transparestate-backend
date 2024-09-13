@@ -12,15 +12,13 @@ router.post("/plan", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), catchEr
 router.put("/plan/:id", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.updateSubscriptionPlan));
 router.delete("/plan/:id", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.deleteSubscriptionPlan));
 router.put("/plan/make-popular/:id", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.makePopular));
-router.put(
-  "/plan/deactivate/:id",
-  protectRoute,
-  allowAccess([USER_ROLES.SUPERADMIN]),
-  catchErrors(subscriptionController.deactivateSubscriptionPlan)
-);
+router.put("/plan/deactivate/:id", protectRoute, allowAccess([USER_ROLES.SUPERADMIN]), catchErrors(subscriptionController.deactivatePlan));
 
 router.post("/active", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeSubscription));
-
 router.get("/plans", catchErrors(subscriptionController.getPlans));
+
+router.post("/active-by-code", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeByCode));
+router.get("/my-subscription", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.getMySubscription));
+router.get("/my-bill", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.getMyBills));
 
 module.exports = router;

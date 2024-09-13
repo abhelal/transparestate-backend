@@ -18,6 +18,7 @@ exports.register = async (req, res) => {
       .email({ tlds: { allow: true } })
       .required(),
     password: Joi.string().required(),
+    companyName: Joi.string().optional(),
   }).options({ stripUnknown: true, abortEarly: false });
 
   const { error, value } = objectSchema.validate(req.body);
@@ -39,21 +40,24 @@ exports.register = async (req, res) => {
     });
   }
 
-  const client = await Client.create({
-    isSubscribed: false,
-  });
-
-  const newUser = new User({
+  const newUser = await User.create({
     name,
     email,
     password,
     role: USER_ROLES.CLIENT,
     status: USER_STATUS.NEW,
-    client: client._id,
     permissions: [],
   });
 
+  const client = await Client.create({
+    owner: newUser._id,
+    companyName: value.companyName,
+    isSubscribed: false,
+  });
+
   await newUser.save();
+
+  newUser.client = client._id;
   const token = await newUser.generateAuthToken();
   await newUser.save();
 
@@ -67,7 +71,7 @@ exports.register = async (req, res) => {
     })
     .json({
       success: true,
-      message: "Company registered successfully",
+      message: "Client registered successfully",
       user: {
         userId: newUser.userId,
         status: newUser.status,

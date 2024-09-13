@@ -2,6 +2,7 @@ const User = require("../models/userModel");
 const Coupon = require("../models/couponModel");
 const Client = require("../models/clientModel");
 const SubscriptionPlan = require("../models/subscriptionPlanModel");
+const SubscriptionBill = require("../models/subscriptionBill");
 
 const { USER_ROLES, USER_STATUS, COUPON_TYPES } = require("../constants");
 const Joi = require("joi");
@@ -61,7 +62,7 @@ exports.makePopular = async (req, res) => {
   return res.status(200).json({ success: true, message: "Subscription plan marked as popular", plan });
 };
 
-exports.deactivateSubscriptionPlan = async (req, res) => {
+exports.deactivatePlan = async (req, res) => {
   const plan = await SubscriptionPlan.findOne({ planId: req.params.id });
   if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
   plan.set({ status: plan.status === "active" ? "inactive" : "active", isPopular: false });
@@ -136,6 +137,7 @@ exports.activeSubscription = async (req, res) => {
   user.set({
     status: USER_STATUS.ACTIVE,
   });
+
   client.set({
     isSubscribed: true,
     subscriptionPlan: coupon.couponType,
@@ -165,6 +167,92 @@ exports.activeSubscription = async (req, res) => {
     .json({
       success: true,
       message: "Your transparestate activated successfully",
+      user: {
+        userId: user.userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
+    });
+};
+
+exports.getMySubscription = async (req, res) => {
+  const subscription = await Client.findOne({ owner: req.id, isSubscribed: true });
+  return res.status(200).json({ success: true, subscription });
+};
+
+exports.getMyBills = async (req, res) => {
+  const bills = await SubscriptionBill.find({ client: req.client });
+
+  return res.status(200).json({ success: true, bills });
+};
+
+exports.activeByCode = async (req, res) => {
+  const schema = Joi.object({
+    code: Joi.string().required().messages({
+      "string.empty": "Coupon code is required",
+    }),
+  });
+
+  const { value, error } = schema.validate(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const client = await Client.findOne({ owner: req.id });
+  if (!client) return res.status(404).json({ message: "Client not found" });
+
+  const coupon = await Coupon.findOne({ code: value.code });
+
+  if (
+    !coupon ||
+    coupon.couponType != COUPON_TYPES.TEST ||
+    !coupon.active ||
+    coupon.uses >= coupon.maxUses ||
+    coupon.expirationDate < new Date()
+  )
+    return res.status(404).json({ message: "Your coupon is not valid" });
+
+  client.set({
+    isSubscribed: true,
+    subscriptionPlan: coupon.couponType,
+    subscriptionValidUntil: new Date(Date.now() + coupon.discount * 24 * 60 * 60 * 1000),
+    description: coupon.description,
+    duration: coupon.discount,
+    price: 0,
+  });
+
+  coupon.set({
+    uses: coupon.uses + 1,
+    user: client.owner,
+    active: false,
+  });
+
+  await client.save();
+  await coupon.save();
+
+  const user = await User.findByIdAndUpdate(req.id, { status: USER_STATUS.ACTIVE });
+  const token = await user.generateAuthToken();
+  await user.save();
+
+  await SubscriptionBill.create({
+    client: client._id,
+    description: "Subscription activated by code",
+    amount: 0,
+    status: "paid",
+  });
+
+  return res
+    .status(200)
+    .cookie("accessToken", token, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: true,
+      domain: process.env.DOMAIN,
+    })
+    .json({
+      success: true,
+      message: "Your subscription activated successfully",
       user: {
         userId: user.userId,
         firstName: user.firstName,
