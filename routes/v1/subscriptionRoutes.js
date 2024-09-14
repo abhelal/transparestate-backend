@@ -16,6 +16,7 @@ router.put("/plan/deactivate/:id", protectRoute, allowAccess([USER_ROLES.SUPERAD
 
 router.post("/active", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeSubscription));
 router.get("/plans", catchErrors(subscriptionController.getPlans));
+router.get("/plans/:id", catchErrors(subscriptionController.getPlanById));
 
 router.post("/active-by-code", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeByCode));
 router.get("/my-subscription", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.getMySubscription));

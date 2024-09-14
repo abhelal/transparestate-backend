@@ -107,6 +107,13 @@ exports.getPlans = async (req, res) => {
   return res.status(200).json({ success: true, plans });
 };
 
+exports.getPlanById = async (req, res) => {
+  const plan = await SubscriptionPlan.findOne({ planId: req.params.id });
+  if (!plan) return res.status(404).json({ message: "Subscription plan not found" });
+
+  return res.status(200).json({ success: true, plan });
+};
+
 exports.activeSubscription = async (req, res) => {
   const schema = Joi.object({
     code: Joi.string().required().messages({
