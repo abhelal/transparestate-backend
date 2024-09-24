@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 const Properties = require("../models/propertyModel");
 const User = require("../models/userModel");
 const Maintenance = require("../models/maintenanceModel");
@@ -25,7 +27,76 @@ exports.getClientDashboardData = async (req, res) => {
     const completedPercentage = (maintenanceCompleted / totalMaintenances) * 100;
     const cancelledPercentage = (maintenanceCancelled / totalMaintenances) * 100;
 
-    res.status(200).json({
+    // const lastSixMonthMaintenance = [
+    //   { month: "January", request: 100, complete: 80 },
+    //   { month: "February", request: 200, complete: 150 },
+    //   { month: "March", request: 300, complete: 250 },
+    //   { month: "April", request: 700, complete: 350 },
+    //   { month: "May", request: 500, complete: 450 },
+    //   { month: "June", request: 600, complete: 550 },
+    //   { month: "July", request: 400, complete: 350 },
+    //   { month: "August", request: 800, complete: 750 },
+    //   { month: "September", request: 900, complete: 850 },
+    //   { month: "October", request: 1000, complete: 950 },
+    //   { month: "November", request: 600, complete: 550 },
+    //   { month: "December", request: 800, complete: 750 },
+    // ];
+
+    const maintenanceRequestAndComplete = await Maintenance.aggregate([
+      {
+        $match: {
+          client: new ObjectId(client),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $month: "$createdAt",
+          },
+          request: { $sum: 1 },
+          complete: {
+            $sum: {
+              $cond: [{ $eq: ["$maintenanceStatus", "COMPLETED"] }, 1, 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+      {
+        $project: {
+          month: "$_id",
+          request: 1,
+          complete: 1,
+          _id: 0,
+        },
+      },
+      {
+        $limit: 6,
+      },
+    ]).exec();
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const mrvsc = maintenanceRequestAndComplete.map((item) => ({ ...item, month: monthNames[item.month - 1] }));
+
+    return res.status(200).json({
       success: true,
       totalProperties,
       totalApartments,
@@ -40,6 +111,7 @@ exports.getClientDashboardData = async (req, res) => {
       inProgressPercentage,
       completedPercentage,
       cancelledPercentage,
+      maintenanceRequestAndComplete: mrvsc,
     });
   } catch (error) {
     console.error("Error in getClientDashboardData:", error);

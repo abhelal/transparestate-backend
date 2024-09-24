@@ -270,3 +270,41 @@ exports.activeByCode = async (req, res) => {
       },
     });
 };
+
+exports.cancelSubscription = async (req, res) => {
+  const client = await Client.findOne({ owner: req.id });
+  if (!client) return res.status(404).json({ message: "Client not found" });
+
+  client.set({
+    isSubscribed: false,
+    subscriptionPlan: null,
+    subscriptionValidUntil: null,
+  });
+
+  await client.save();
+
+  const user = await User.findByIdAndUpdate(req.id, { status: USER_STATUS.INACTIVE });
+  const token = await user.generateAuthToken();
+  await user.save();
+
+  return res
+    .status(200)
+    .cookie("accessToken", token, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: true,
+      domain: process.env.DOMAIN,
+    })
+    .json({
+      success: true,
+      message: "Your subscription canceled successfully",
+      user: {
+        userId: user.userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
+    });
+};

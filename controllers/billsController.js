@@ -1,22 +1,40 @@
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
+
 const User = require("../models/userModel");
 const Bill = require("../models/billsModel");
 const { USER_ROLES } = require("../constants");
 
 exports.getMyBills = async (req, res) => {
   try {
-    const userId = req.userId;
-    const tenant = await User.findOne({ userId, client: req.client });
+    const page = req.query.page || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
 
-    if (!tenant) {
-      return res.status(409).json({
-        success: false,
-        message: "Tenant not found",
-      });
-    }
+    const count = await Bill.countDocuments({ tenant: req.id });
+    const totalPages = Math.ceil(count / limit);
+    const bills = await Bill.find({ tenant: req.id }).skip(skip).limit(limit);
 
-    const bills = await Bill.find({ tenant: tenant._id });
+    const totalPaidUnpaid = await Bill.aggregate([
+      { $match: { tenant: new ObjectId(req.id) } },
+      {
+        $group: {
+          _id: "$status",
+          total: { $sum: "$amount" },
+        },
+      },
+    ]);
 
-    return res.status(200).json({ success: true, bills: bills });
+    const totalAmount = totalPaidUnpaid.reduce((acc, item) => {
+      acc[item._id] = item.total;
+      return acc;
+    }, {});
+
+    const totalPaid = totalAmount.paid || 0;
+    const totalUnpaid = totalAmount.unpaid || 0;
+    const total = totalPaid + totalUnpaid;
+
+    return res.status(200).json({ success: true, bills, totalPages, totalPaid, totalUnpaid, total });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

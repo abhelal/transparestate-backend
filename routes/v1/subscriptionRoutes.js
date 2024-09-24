@@ -20,6 +20,12 @@ router.get("/plans/:id", catchErrors(subscriptionController.getPlanById));
 
 router.post("/active-by-code", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.activeByCode));
 router.get("/my-subscription", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.getMySubscription));
+router.post(
+  "/my-subscription/cancel",
+  protectRoute,
+  allowAccess([USER_ROLES.CLIENT]),
+  catchErrors(subscriptionController.cancelSubscription)
+);
 router.get("/my-bill", protectRoute, allowAccess([USER_ROLES.CLIENT]), catchErrors(subscriptionController.getMyBills));
 
 module.exports = router;
