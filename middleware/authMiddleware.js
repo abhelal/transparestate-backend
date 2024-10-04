@@ -19,13 +19,13 @@ const protectRoute = async (req, res, next) => {
       const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
 
       if (user && isValid) {
-        req.user = user;
         req.id = user.id;
         req.userId = user.userId;
         req.role = user.role;
         req.client = user.client;
         req.email = user.email;
         req.status = user.status;
+        req.user = user;
         return next();
       } else {
         const dbuser = await User.findOne({ userId: user.userId });
@@ -60,4 +60,11 @@ const allowAccess = (roles = []) => {
   };
 };
 
-module.exports = { protectRoute, allowAccess };
+const denyAccess = (roles = []) => {
+  return (req, res, next) => {
+    if (roles.includes(req.role)) return res.status(401).json({ message: "Sorry you are not authorized" });
+    next();
+  };
+};
+
+module.exports = { protectRoute, allowAccess, denyAccess };

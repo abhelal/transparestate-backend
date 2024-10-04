@@ -229,3 +229,25 @@ exports.deleteUser = async (req, res) => {
     return res.status(400).json({ message: error.message });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    const users = await User.find({
+      email: { $regex: email, $options: "i" },
+      role: { $ne: USER_ROLES.SUPERADMIN },
+    })
+      .select("name email contactNumber client")
+      .populate("client")
+      .limit(10);
+    if (!users) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ success: true, users });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};

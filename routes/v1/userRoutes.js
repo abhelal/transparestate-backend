@@ -30,4 +30,6 @@ router.put("/update/properties/:userId", catchErrors(controler.updateProperties)
 router.put("/update/password/:userId", catchErrors(controler.updatePassword));
 router.delete("/delete/:userId", catchErrors(controler.deleteUser));
 
+router.get("/profile", catchErrors(controler.getProfile));
+
 module.exports = router;

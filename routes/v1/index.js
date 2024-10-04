@@ -22,6 +22,7 @@ const notificationRoutes = require("./notificationRoutes");
 const billRoutes = require("./billRoutes");
 const reportRoutes = require("./reportRoutes");
 const contactRoutes = require("./contactRoutes");
+const supportRoutes = require("./supportRoutes");
 
 // :: Prefix Path ---  '/api/v1'
 
@@ -43,5 +44,6 @@ router.use("/notification", protectRoute, notificationRoutes);
 router.use("/bills", protectRoute, billRoutes);
 router.use("/reports", protectRoute, reportRoutes);
 router.use("/contact", contactRoutes);
+router.use("/support", protectRoute, supportRoutes);
 
 module.exports = router;

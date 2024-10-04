@@ -175,12 +175,15 @@ exports.activeSubscription = async (req, res) => {
       success: true,
       message: "Your transparestate activated successfully",
       user: {
+        id: user._id,
         userId: user.userId,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role,
         status: user.status,
+        client: user.client._id,
+        isSubscribed: user.client.isSubscribed,
       },
     });
 };

@@ -1,11 +1,27 @@
-const mongoose = require("mongoose");
-const ObjectId = mongoose.Types.ObjectId;
 const Properties = require("../models/propertyModel");
 const User = require("../models/userModel");
 const Maintenance = require("../models/maintenanceModel");
 const Apartment = require("../models/apartmentModel");
 const Conversation = require("../models/conversationModel");
+const Client = require("../models/clientModel");
+const SubscriptionBill = require("../models/subscriptionBill");
+
 const { USER_ROLES } = require("../constants");
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 exports.getClientDashboardData = async (req, res) => {
   try {
@@ -27,26 +43,9 @@ exports.getClientDashboardData = async (req, res) => {
     const completedPercentage = (maintenanceCompleted / totalMaintenances) * 100;
     const cancelledPercentage = (maintenanceCancelled / totalMaintenances) * 100;
 
-    // const lastSixMonthMaintenance = [
-    //   { month: "January", request: 100, complete: 80 },
-    //   { month: "February", request: 200, complete: 150 },
-    //   { month: "March", request: 300, complete: 250 },
-    //   { month: "April", request: 700, complete: 350 },
-    //   { month: "May", request: 500, complete: 450 },
-    //   { month: "June", request: 600, complete: 550 },
-    //   { month: "July", request: 400, complete: 350 },
-    //   { month: "August", request: 800, complete: 750 },
-    //   { month: "September", request: 900, complete: 850 },
-    //   { month: "October", request: 1000, complete: 950 },
-    //   { month: "November", request: 600, complete: 550 },
-    //   { month: "December", request: 800, complete: 750 },
-    // ];
-
     const maintenanceRequestAndComplete = await Maintenance.aggregate([
       {
-        $match: {
-          client: new ObjectId(client),
-        },
+        $match: {},
       },
       {
         $group: {
@@ -78,21 +77,6 @@ exports.getClientDashboardData = async (req, res) => {
         $limit: 6,
       },
     ]).exec();
-
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
 
     const mrvsc = maintenanceRequestAndComplete.map((item) => ({ ...item, month: monthNames[item.month - 1] }));
 
@@ -237,6 +221,86 @@ exports.getTenantDashboardData = async (req, res) => {
     res.status(200).json({ success: true, conversations });
   } catch (error) {
     console.error("Error in getTenantDashboardData:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+exports.getSuperAdminDashboardData = async (req, res) => {
+  try {
+    // total client and subsctibed client
+    const totalClients = await Client.countDocuments({});
+    const subscribedClients = await Client.countDocuments({ isSubscribed: true });
+
+    // total subscription bill amount and this month subscription bill amount
+    const totalBillAmount = await SubscriptionBill.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+    const thisMonthBillAmount = await SubscriptionBill.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+    // last six mond subscribed vs total client , monthwise data .
+
+    const subscribedVsTotalClient = await Client.aggregate([
+      {
+        $group: {
+          _id: {
+            $month: "$createdAt",
+          },
+          total: { $sum: 1 },
+          subscribed: {
+            $sum: {
+              $cond: [{ $eq: ["$isSubscribed", true] }, 1, 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+      {
+        $project: {
+          month: "$_id",
+          total: 1,
+          subscribed: 1,
+          _id: 0,
+        },
+      },
+      {
+        $limit: 6,
+      },
+    ]).exec();
+
+    const stc = subscribedVsTotalClient.map((item) => ({ ...item, month: monthNames[item.month - 1] }));
+
+    return res.status(200).json({
+      totalClients,
+      subscribedClients,
+      totalBillAmount: totalBillAmount.length ? totalBillAmount[0].totalAmount : 0,
+      thisMonthBillAmount: thisMonthBillAmount.length ? thisMonthBillAmount[0].totalAmount : 0,
+      subscribedVsTotalClient: stc,
+    });
+  } catch (error) {
+    console.error("Error in getSuperAdminDashboardData:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

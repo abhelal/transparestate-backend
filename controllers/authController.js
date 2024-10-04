@@ -31,16 +31,16 @@ exports.register = async (req, res) => {
     });
   }
   const { name, email, password } = value;
-  const user = await User.findOne({ email: email });
+  const isExits = await User.findOne({ email: email });
 
-  if (user) {
+  if (isExits) {
     return res.status(409).json({
       success: false,
       message: "Email already exists",
     });
   }
 
-  const newUser = await User.create({
+  const user = await User.create({
     name,
     email,
     password,
@@ -50,16 +50,18 @@ exports.register = async (req, res) => {
   });
 
   const client = await Client.create({
-    owner: newUser._id,
+    owner: user._id,
     companyName: value.companyName,
     isSubscribed: false,
   });
 
-  await newUser.save();
+  const userWithClient = await User.findOneAndUpdate({ _id: user._id }, { client: client._id }, { new: true }).populate(
+    "client",
+    "isSubscribed"
+  );
 
-  newUser.client = client._id;
-  const token = await newUser.generateAuthToken();
-  await newUser.save();
+  const token = await userWithClient.generateAuthToken();
+  await userWithClient.save();
 
   return res
     .status(201)
@@ -73,13 +75,15 @@ exports.register = async (req, res) => {
       success: true,
       message: "Client registered successfully",
       user: {
-        userId: newUser.userId,
-        status: newUser.status,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        permissions: newUser.permissions,
-        isSubscribed: client.isSubscribed,
+        id: userWithClient._id,
+        userId: userWithClient.userId,
+        status: userWithClient.status,
+        name: userWithClient.name,
+        email: userWithClient.email,
+        role: userWithClient.role,
+        permissions: userWithClient.permissions,
+        client: userWithClient.client._id,
+        isSubscribed: userWithClient.client.isSubscribed,
       },
     });
 };
@@ -123,8 +127,8 @@ exports.login = async (req, res) => {
       });
     } else {
       const token = await user.generateAuthToken();
-
       await user.save();
+
       return res
         .status(200)
         .cookie("accessToken", token, {
@@ -137,6 +141,7 @@ exports.login = async (req, res) => {
           success: true,
           message: "Login successfully",
           user: {
+            id: user._id,
             userId: user.userId,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -144,6 +149,7 @@ exports.login = async (req, res) => {
             role: user.role,
             status: user.status,
             permissions: user.permissions,
+            client: user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id,
             isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
           },
         });

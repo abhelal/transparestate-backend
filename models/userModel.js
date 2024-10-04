@@ -90,7 +90,16 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.generateAuthToken = async function () {
   const token = jwt.sign(
-    { id: this._id, userId: this.userId, role: this.role, client: this.client, email: this.email, status: this.status },
+    {
+      id: this._id,
+      userId: this.userId,
+      role: this.role,
+      email: this.email,
+      status: this.status,
+      permissions: this.permissions,
+      client: this.role === USER_ROLES.SUPERADMIN ? "" : this.client._id,
+      isSubscribed: this.role === USER_ROLES.SUPERADMIN ? true : this.client.isSubscribed,
+    },
     process.env.JWT_SECRET,
     {
       expiresIn: "365d",
