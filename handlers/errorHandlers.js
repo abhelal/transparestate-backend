@@ -24,7 +24,7 @@ exports.catchErrors = (fn) => {
 exports.notFound = (req, res, next) => {
   return res.status(404).json({
     success: false,
-    message: "url doesn't exist",
+    message: "API url doesn't exist",
   });
 };
 

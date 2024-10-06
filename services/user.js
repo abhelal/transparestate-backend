@@ -2,7 +2,6 @@ const User = require("../models/userModel");
 const Property = require("../models/propertyModel");
 const { USER_ROLES, USER_STATUS } = require("../constants");
 const Joi = require("joi");
-const redisClient = require("../config/redis");
 const { toSentenceCase } = require("../utils/helper");
 
 exports.fetchAllClients = async ({ query = "", page = 1 }) => {
@@ -273,9 +272,6 @@ exports.updateUserPassword = async ({ userId, client, password }) => {
     throw new Error("User not found");
   }
 
-  for (let token of user.accessToken) {
-    await redisClient.del(`accessToken:${token}`);
-  }
   user.accessToken = [];
   user.password = password;
 
@@ -293,9 +289,7 @@ exports.deleteUserAccount = async ({ userId, client }) => {
   if (!user) {
     throw new Error("User not found");
   }
-  for (let token of user.accessToken) {
-    await redisClient.del(`accessToken:${token}`);
-  }
+
   user.status = USER_STATUS.DELETED;
 
   await user.save();

@@ -1,9 +1,7 @@
 const User = require("../models/userModel");
 const Client = require("../models/clientModel");
-
 const Joi = require("joi");
 const { USER_ROLES, USER_STATUS } = require("../constants");
-const client = require("../config/redis");
 
 // register user
 
@@ -61,7 +59,6 @@ exports.register = async (req, res) => {
   );
 
   const token = await userWithClient.generateAuthToken();
-  await userWithClient.save();
 
   return res
     .status(201)
@@ -117,44 +114,41 @@ exports.login = async (req, res) => {
       success: false,
       message: "Account not found",
     });
-  } else {
-    const isMatch = await user.verifyPassword(password);
-
-    if (!isMatch) {
-      return res.status(409).json({
-        success: false,
-        message: "Incorrect password",
-      });
-    } else {
-      const token = await user.generateAuthToken();
-      await user.save();
-
-      return res
-        .status(200)
-        .cookie("accessToken", token, {
-          maxAge: 365 * 24 * 60 * 60 * 1000,
-          httpOnly: true,
-          secure: true,
-          domain: process.env.DOMAIN,
-        })
-        .json({
-          success: true,
-          message: "Login successfully",
-          user: {
-            id: user._id,
-            userId: user.userId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            permissions: user.permissions,
-            client: user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id,
-            isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
-          },
-        });
-    }
   }
+  const isMatch = await user.verifyPassword(password);
+
+  if (!isMatch) {
+    return res.status(409).json({
+      success: false,
+      message: "Incorrect password",
+    });
+  }
+  const token = await user.generateAuthToken();
+
+  return res
+    .status(200)
+    .cookie("accessToken", token, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: true,
+      domain: process.env.DOMAIN,
+    })
+    .json({
+      success: true,
+      message: "Login successfully",
+      user: {
+        id: user._id,
+        userId: user.userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        permissions: user.permissions,
+        client: user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id,
+        isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
+      },
+    });
 };
 
 exports.logout = async (req, res) => {
@@ -168,7 +162,6 @@ exports.logout = async (req, res) => {
     });
   } else {
     user.accessToken = user.accessToken.filter((token) => token !== accessToken);
-    await client.del(`accessToken:${accessToken}`);
     await user.save();
     return res.status(200).clearCookie("accessToken").json({
       success: true,
@@ -184,17 +177,14 @@ exports.logoutAll = async (req, res) => {
       success: false,
       message: "Account not found",
     });
-  } else {
-    for (let token of user.accessToken) {
-      await client.del(`accessToken:${token}`);
-    }
-    user.accessToken = [];
-    await user.save();
-    return res.status(200).clearCookie("accessToken").json({
-      success: true,
-      message: "Successfully logout from all devices",
-    });
   }
+
+  user.accessToken = [];
+  await user.save();
+  return res.status(200).clearCookie("accessToken").json({
+    success: true,
+    message: "Successfully logout from all devices",
+  });
 };
 
 exports.logoutOthers = async (req, res) => {
@@ -206,47 +196,29 @@ exports.logoutOthers = async (req, res) => {
       success: false,
       message: "Account not found",
     });
-  } else {
-    for (let token of user.accessToken) {
-      if (token !== accessToken) {
-        await client.del(`accessToken:${token}`);
-      }
-    }
-
-    user.accessToken = [accessToken];
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Successfully logout from other devices",
-    });
   }
+  user.accessToken = [accessToken];
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Successfully logout from other devices",
+  });
 };
 
 exports.me = async (req, res) => {
-  const user = await User.findOne({ userId: req.userId }).populate("client", "isSubscribed");
-
-  if (!user) {
-    return res.status(409).json({
-      success: false,
-      message: "Account not found",
-    });
-  }
-
   return res.status(200).json({
     success: true,
     message: "User details",
     user: {
-      id: user._id,
-      userId: user.userId,
-      role: user.role,
-      client: user.client,
-      email: user.email,
-      status: user.status,
-      permissions: user.permissions,
-      isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      id: req.id,
+      userId: req.userId,
+      role: req.role,
+      email: req.email,
+      status: req.status,
+      permissions: req.permissions,
+      client: req.role === USER_ROLES.SUPERADMIN ? "" : req.client,
+      isSubscribed: req.role === USER_ROLES.SUPERADMIN ? true : req.isSubscribed,
     },
   });
 };

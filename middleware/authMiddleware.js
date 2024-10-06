@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
-const client = require("../config/redis");
+const { USER_ROLES } = require("../constants");
 
 const protectRoute = async (req, res, next) => {
   try {
@@ -13,37 +13,38 @@ const protectRoute = async (req, res, next) => {
       });
     }
 
-    if (accessToken) {
-      const secret = process.env.JWT_SECRET;
-      const user = jwt.verify(accessToken, secret);
-      const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
+    const secret = process.env.JWT_SECRET;
+    const decodedUser = jwt.verify(accessToken, secret);
+    const isExpired = Date.now() >= decodedUser.exp * 1000;
+    const user = await User.findById(decodedUser.id).populate("client", "isSubscribed");
 
-      if (user && isValid) {
-        req.id = user.id;
-        req.userId = user.userId;
-        req.role = user.role;
-        req.client = user.client;
-        req.email = user.email;
-        req.status = user.status;
-        req.user = user;
-        return next();
-      } else {
-        const dbuser = await User.findOne({ userId: user.userId });
-        if (!dbuser) {
-          return res.status(409).clearCookie("accessToken").json({
-            success: false,
-            message: "Account not found",
-          });
-        } else {
-          dbuser.accessToken = dbuser.accessToken.filter((token) => token !== accessToken);
-          await user.save();
-          return res.status(401).clearCookie("accessToken").json({
-            success: false,
-            message: "Sorry you are not authorized",
-          });
-        }
-      }
+    if (!user) {
+      return res.status(409).clearCookie("accessToken").json({
+        success: false,
+        message: "Account not found",
+      });
     }
+
+    if (isExpired) {
+      user.accessToken = user.accessToken.filter((token) => token !== accessToken);
+      await user.save();
+
+      return res.status(401).clearCookie("accessToken").json({
+        success: false,
+        message: "Sorry your session has expired",
+      });
+    }
+
+    req.id = user._id;
+    req.userId = user.userId;
+    req.role = user.role;
+    req.email = user.email;
+    req.status = user.status;
+    req.permissions = user.permissions;
+    req.client = user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id;
+    req.isSubscribed = user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed;
+
+    return next();
   } catch (error) {
     console.log("protectRoute - error", error);
     return res.status(401).clearCookie("accessToken").json({
@@ -67,4 +68,21 @@ const denyAccess = (roles = []) => {
   };
 };
 
-module.exports = { protectRoute, allowAccess, denyAccess };
+const permissionCheck = (permission = "") => {
+  return (req, res, next) => {
+    const permissions = req?.permissions || [];
+    if (!permissions.includes(permission)) return res.status(401).json({ message: "Sorry you do not have permission" });
+    next();
+  };
+};
+
+module.exports = { protectRoute, allowAccess, denyAccess, permissionCheck };
+
+// id: this._id,
+//     userId: this.userId,
+//     role: this.role,
+//     email: this.email,
+//     status: this.status,
+//     permissions: this.permissions,
+//     client: this.role === USER_ROLES.SUPERADMIN ? "" : this.client._id,
+//     isSubscribed: this.role === USER_ROLES.SUPERADMIN ? true : this.client.isSubscribed,

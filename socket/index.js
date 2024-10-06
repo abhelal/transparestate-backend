@@ -1,6 +1,5 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-const client = require("../config/redis");
 const cookieParser = require("cookie");
 const Message = require("../models/messageModel");
 const Conversation = require("../models/conversationModel");
@@ -32,8 +31,8 @@ function initialize(server) {
       if (!accessToken) return next();
       const secret = process.env.JWT_SECRET;
       const user = jwt.verify(accessToken, secret);
-      const isValid = (await client.GET(`accessToken:${accessToken}`)) === user.userId.toString();
-      if (user && isValid) {
+
+      if (user) {
         socket.userId = user.userId;
         socket.user = user;
       }

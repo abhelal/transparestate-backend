@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
 const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
-const client = require("../config/redis");
 
 const userSchema = new Schema(
   {
@@ -89,28 +88,12 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.generateAuthToken = async function () {
-  const token = jwt.sign(
-    {
-      id: this._id,
-      userId: this.userId,
-      role: this.role,
-      email: this.email,
-      status: this.status,
-      permissions: this.permissions,
-      client: this.role === USER_ROLES.SUPERADMIN ? "" : this.client._id,
-      isSubscribed: this.role === USER_ROLES.SUPERADMIN ? true : this.client.isSubscribed,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "365d",
-    }
-  );
-
+  const token = jwt.sign({ id: this._id, userId: this.userId }, process.env.JWT_SECRET, { expiresIn: "365d" });
   if (this.accessToken.length >= 5) {
     this.accessToken.shift();
   }
   this.accessToken.push(token);
-  await client.set(`accessToken:${token}`, this.userId.toString(), { EX: 365 * 24 * 60 * 60 });
+  await this.save();
   return token;
 };
 

@@ -10,11 +10,11 @@ exports.getConversations = async (req, res) => {
   };
 
   if (req.role === USER_ROLES.TENANT) {
-    query.tenant = req.user.id;
+    query.tenant = req.id;
   }
 
   if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
-    const staff = await User.findById(req.user.id);
+    const staff = await User.findById(req.id);
     const properties = staff.properties;
     query.property = { $in: properties };
   }
@@ -37,11 +37,11 @@ exports.getRecentMessages = async (req, res) => {
   };
 
   if (req.role === USER_ROLES.TENANT) {
-    query.tenant = req.user.id;
+    query.tenant = req.id;
   }
 
   if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
-    const staff = await User.findById(req.user.id);
+    const staff = await User.findById(req.id);
     const properties = staff.properties;
     query.property = { $in: properties };
   }
@@ -71,11 +71,10 @@ exports.getMessages = async (req, res) => {
 };
 
 exports.sendMessage = async (req, res) => {
-  const { user } = req;
   const { conversationId } = req.params;
   const { text, image, file } = req.body;
   const message = await Message.create({
-    sender: user._id,
+    sender: req.id,
     conversationId,
     text,
     image,
