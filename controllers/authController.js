@@ -215,6 +215,7 @@ exports.me = async (req, res) => {
       userId: req.userId,
       role: req.role,
       email: req.email,
+      name: req?.name,
       status: req.status,
       permissions: req.permissions,
       client: req.role === USER_ROLES.SUPERADMIN ? "" : req.client,

@@ -1,4 +1,4 @@
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
 const User = require("../models/userModel");
 const {
   fetchAllClients,
@@ -109,7 +109,12 @@ exports.getJanitor = async (req, res) => {
 exports.createTenant = async (req, res) => {
   try {
     const userData = req.body;
-    const response = await createUserAccount({ userData, client: req.client, role: USER_ROLES.TENANT });
+    const response = await createUserAccount({
+      userData,
+      client: req.client,
+      role: USER_ROLES.TENANT,
+      permissions: [USER_PERMISSIONS.READ_MESSAGE, USER_PERMISSIONS.UPDATE_MESSAGE],
+    });
     return res.status(200).json(response);
   } catch (error) {
     return res.status(400).json({ message: error.message });
@@ -135,9 +140,8 @@ exports.getAllTenants = async (req, res) => {
         { email: { $regex: searchKey, $options: "i" } },
       ],
     };
-
     if (user.role === USER_ROLES.MAINTAINER || user.role === USER_ROLES.JANITOR) {
-      query.properties = { $in: user.properties };
+      query.$and = [{ $or: [{ properties: { $in: user.properties } }, { properties: { $eq: [] } }] }];
     }
 
     const users = await User.find(query)

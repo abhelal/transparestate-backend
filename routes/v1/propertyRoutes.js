@@ -3,22 +3,36 @@ const router = express();
 const { catchErrors } = require("../../handlers/errorHandlers");
 
 const propertyController = require("../../controllers/propertyController");
+const { permissionCheck } = require("../../middleware/authMiddleware");
+const { USER_PERMISSIONS } = require("../../constants");
 
 // :: Prefix Path ---  '/api/v1/properties'
 
-router.post("/create", catchErrors(propertyController.createProperty));
-router.get("/list", catchErrors(propertyController.getProperties));
-router.get("/:id", catchErrors(propertyController.getProperty));
-router.put("/:id/update", catchErrors(propertyController.updateProperty));
-router.put("/:id/archive", catchErrors(propertyController.archiveProperty));
-router.put("/:id/amenities", catchErrors(propertyController.updateAmenities));
-router.put("/:id/utilities", catchErrors(propertyController.updateUtilities));
-router.put("/:id/allowpets", catchErrors(propertyController.allowPets));
+router.get("/list", permissionCheck(USER_PERMISSIONS.READ_PROPERTY), catchErrors(propertyController.getProperties));
+router.get("/:id", permissionCheck(USER_PERMISSIONS.READ_PROPERTY), catchErrors(propertyController.getProperty));
+router.get("/:propertyId/apartments", permissionCheck(USER_PERMISSIONS.READ_PROPERTY), catchErrors(propertyController.getApartments));
+router.get(
+  "/:propertyId/apartments/:apartmentId",
+  permissionCheck(USER_PERMISSIONS.READ_PROPERTY),
+  catchErrors(propertyController.getApartment)
+);
 
-router.post("/:id/apartments/create", catchErrors(propertyController.createApartment));
-router.get("/:propertyId/apartments", catchErrors(propertyController.getApartments));
-router.get("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.getApartment));
-router.put("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.updateApartment));
-router.delete("/:propertyId/apartments/:apartmentId", catchErrors(propertyController.deleteApartment));
+router.post("/create", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.createProperty));
+router.put("/:id/update", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.updateProperty));
+router.put("/:id/archive", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.archiveProperty));
+router.put("/:id/amenities", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.updateAmenities));
+router.put("/:id/utilities", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.updateUtilities));
+router.put("/:id/allowpets", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.allowPets));
+router.post("/:id/apartments/create", permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY), catchErrors(propertyController.createApartment));
+router.put(
+  "/:propertyId/apartments/:apartmentId",
+  permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY),
+  catchErrors(propertyController.updateApartment)
+);
+router.delete(
+  "/:propertyId/apartments/:apartmentId",
+  permissionCheck(USER_PERMISSIONS.UPDATE_PROPERTY),
+  catchErrors(propertyController.deleteApartment)
+);
 
 module.exports = router;

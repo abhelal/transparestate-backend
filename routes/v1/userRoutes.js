@@ -2,8 +2,8 @@ const express = require("express");
 const router = express();
 const controler = require("../../controllers/userController");
 const { catchErrors } = require("../../handlers/errorHandlers");
-const { allowAccess } = require("../../middleware/authMiddleware");
-const { USER_ROLES } = require("../../constants");
+const { allowAccess, permissionCheck } = require("../../middleware/authMiddleware");
+const { USER_ROLES, USER_PERMISSIONS } = require("../../constants");
 
 // :: Prefix Path ---  '/api/v1/user'
 
@@ -19,9 +19,9 @@ router.post("/janitors", catchErrors(controler.createJanitor));
 router.get("/janitors", catchErrors(controler.getAllJanitors));
 router.get("/janitors/:userId", catchErrors(controler.getJanitor));
 
-router.post("/tenants", catchErrors(controler.createTenant));
-router.get("/tenants", catchErrors(controler.getAllTenants));
-router.get("/tenants/:userId", catchErrors(controler.getTenant));
+router.post("/tenants", permissionCheck(USER_PERMISSIONS.UPDATE_TENANT), catchErrors(controler.createTenant));
+router.get("/tenants", permissionCheck(USER_PERMISSIONS.READ_TENANT), catchErrors(controler.getAllTenants));
+router.get("/tenants/:userId", permissionCheck(USER_PERMISSIONS.READ_TENANT), catchErrors(controler.getTenant));
 
 router.put("/update/info/:userId", catchErrors(controler.updateInfo));
 router.put("/update/status/:userId", catchErrors(controler.updateStatus));

@@ -41,7 +41,7 @@ exports.fetchClient = async (id) => {
   };
 };
 
-exports.createUserAccount = async ({ userData, client, role }) => {
+exports.createUserAccount = async ({ userData, client, role, permissions = [] }) => {
   const schema = Joi.object({
     name: Joi.string().required().min(3),
     email: Joi.string().email().required(),
@@ -66,7 +66,7 @@ exports.createUserAccount = async ({ userData, client, role }) => {
     ...value,
     role,
     client,
-    permissions: [],
+    permissions,
     status: USER_STATUS.ACTIVE,
   });
 

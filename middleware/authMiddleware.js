@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const { USER_ROLES } = require("../constants");
+const { name } = require("../routes/v1/maintenanceRoutes");
 
 const protectRoute = async (req, res, next) => {
   try {
@@ -39,6 +40,7 @@ const protectRoute = async (req, res, next) => {
     req.userId = user.userId;
     req.role = user.role;
     req.email = user.email;
+    req.name = user?.name || "";
     req.status = user.status;
     req.permissions = user.permissions;
     req.client = user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id;
@@ -70,6 +72,7 @@ const denyAccess = (roles = []) => {
 
 const permissionCheck = (permission = "") => {
   return (req, res, next) => {
+    if (req.role === USER_ROLES.CLIENT) return next();
     const permissions = req?.permissions || [];
     if (!permissions.includes(permission)) return res.status(401).json({ message: "Sorry you do not have permission" });
     next();
