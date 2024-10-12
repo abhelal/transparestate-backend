@@ -163,9 +163,9 @@ exports.logout = async (req, res) => {
   } else {
     user.accessToken = user.accessToken.filter((token) => token !== accessToken);
     await user.save();
-    return res.status(200).clearCookie("accessToken").json({
+    res.status(200).clearCookie("accessToken").json({
       success: true,
-      message: "Successfully logout",
+      message: "Successfully loggedout",
     });
   }
 };
@@ -173,7 +173,7 @@ exports.logout = async (req, res) => {
 exports.logoutAll = async (req, res) => {
   const user = await User.findOne({ userId: req.userId });
   if (!user) {
-    return res.status(409).json({
+    res.status(409).json({
       success: false,
       message: "Account not found",
     });
@@ -181,7 +181,7 @@ exports.logoutAll = async (req, res) => {
 
   user.accessToken = [];
   await user.save();
-  return res.status(200).clearCookie("accessToken").json({
+  res.status(200).clearCookie("accessToken").json({
     success: true,
     message: "Successfully logout from all devices",
   });
