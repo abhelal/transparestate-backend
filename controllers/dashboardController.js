@@ -45,7 +45,9 @@ exports.getClientDashboardData = async (req, res) => {
 
     const maintenanceRequestAndComplete = await Maintenance.aggregate([
       {
-        $match: {},
+        $match: {
+          client,
+        },
       },
       {
         $group: {
@@ -103,7 +105,7 @@ exports.getClientDashboardData = async (req, res) => {
   }
 };
 
-exports.getMaintainerDashboardData = async (req, res) => {
+exports.getDashboardData = async (req, res) => {
   try {
     const { client, userId } = req;
     const user = await User.findOne({ userId });
@@ -141,6 +143,43 @@ exports.getMaintainerDashboardData = async (req, res) => {
     const completedPercentage = (maintenanceCompleted / totalMaintenances) * 100;
     const cancelledPercentage = (maintenanceCancelled / totalMaintenances) * 100;
 
+    const maintenanceRequestAndComplete = await Maintenance.aggregate([
+      {
+        $match: { property: { $in: user.properties } },
+      },
+      {
+        $group: {
+          _id: {
+            $month: "$createdAt",
+          },
+          request: { $sum: 1 },
+          complete: {
+            $sum: {
+              $cond: [{ $eq: ["$maintenanceStatus", "COMPLETED"] }, 1, 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+      {
+        $project: {
+          month: "$_id",
+          request: 1,
+          complete: 1,
+          _id: 0,
+        },
+      },
+      {
+        $limit: 6,
+      },
+    ]).exec();
+
+    const mrvsc = maintenanceRequestAndComplete.map((item) => ({ ...item, month: monthNames[item.month - 1] }));
+
     return res.status(200).json({
       success: true,
       totalProperties,
@@ -156,43 +195,14 @@ exports.getMaintainerDashboardData = async (req, res) => {
       inProgressPercentage,
       completedPercentage,
       cancelledPercentage,
+      maintenanceRequestAndComplete: mrvsc,
     });
   } catch (error) {
     console.error("Error in getMaintainerDashboardData:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-exports.getJanitorDashboardData = async (req, res) => {
-  try {
-    let query = {
-      client: req.client,
-    };
 
-    if (req.role === USER_ROLES.TENANT) {
-      query.tenant = req.user.id;
-    }
-
-    if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
-      const staff = await User.findById(req.user.id);
-      const properties = staff.properties;
-      query.property = { $in: properties };
-    }
-
-    const conversations = await Conversation.find(query)
-      .populate("property", "name")
-      .populate("maintenance", "maintenanceType maintenanceDetails")
-      .populate({
-        path: "messages",
-        options: { sort: { createdAt: -1 } },
-        perDocumentLimit: 1,
-      })
-      .sort("-updatedAt");
-    res.status(200).json({ success: true, conversations });
-  } catch (error) {
-    console.error("Error in getJanitorDashboardData:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
 exports.getTenantDashboardData = async (req, res) => {
   try {
     let query = {
