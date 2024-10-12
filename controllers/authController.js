@@ -163,10 +163,17 @@ exports.logout = async (req, res) => {
   } else {
     user.accessToken = user.accessToken.filter((token) => token !== accessToken);
     await user.save();
-    res.status(200).clearCookie("accessToken").json({
-      success: true,
-      message: "Successfully loggedout",
-    });
+    res
+      .clearCookie("accessToken", {
+        httpOnly: true,
+        secure: true,
+        domain: process.env.DOMAIN,
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: "Successfully logged out",
+      });
   }
 };
 
