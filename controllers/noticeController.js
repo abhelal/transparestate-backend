@@ -1,11 +1,11 @@
-const Notification = require("../models/notificationModel");
+const Notice = require("../models/noticeModel");
 const User = require("../models/userModel");
 const { USER_ROLES } = require("../constants");
 
-exports.createNotification = async (req, res) => {
+exports.createNotice = async (req, res) => {
   try {
     const { date, dateEvent, properties, title, body } = req.body;
-    await Notification.create({
+    await Notice.create({
       client: req.client,
       date,
       dateEvent,
@@ -13,23 +13,23 @@ exports.createNotification = async (req, res) => {
       title,
       body,
     });
-    res.status(201).json({ message: "Notification sent successfully" });
+    res.status(201).json({ message: "Notice sent successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-exports.deleteNotification = async (req, res) => {
+exports.deleteNotice = async (req, res) => {
   try {
-    const { notificationId } = req.params;
-    await Notification.findOneAndUpdate({ notificationId }, { archived: true, archivedBy: req.id });
-    res.status(200).json({ message: "Notification Deleted successfully" });
+    const { noticeId } = req.params;
+    await Notice.findOneAndUpdate({ noticeId }, { archived: true, archivedBy: req.id });
+    res.status(200).json({ message: "Notice Deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-exports.getNotificationList = async (req, res) => {
+exports.getNoticeList = async (req, res) => {
   try {
     const { page = 1 } = req.query;
     const user = await User.findOne({ userId: req.userId });
@@ -50,14 +50,14 @@ exports.getNotificationList = async (req, res) => {
       query.properties = { $in: user.properties };
     }
 
-    const totalNotifications = await Notification.find(query).countDocuments();
-    const notifications = await Notification.find(query)
+    const totalNotices = await Notice.find(query).countDocuments();
+    const notices = await Notice.find(query)
       .populate("properties", "name")
       .limit(5)
       .skip(5 * (page - 1))
       .sort("-createdAt")
       .lean();
-    res.status(200).json({ success: true, currentPage: page, totalPages: Math.ceil(totalNotifications / 5), notifications });
+    res.status(200).json({ success: true, currentPage: page, totalPages: Math.ceil(totalNotices / 5), notices });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }

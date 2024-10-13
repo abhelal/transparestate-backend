@@ -113,7 +113,13 @@ exports.createTenant = async (req, res) => {
       userData,
       client: req.client,
       role: USER_ROLES.TENANT,
-      permissions: [USER_PERMISSIONS.READ_MESSAGE, USER_PERMISSIONS.UPDATE_MESSAGE],
+      permissions: [
+        USER_PERMISSIONS.READ_MESSAGE,
+        USER_PERMISSIONS.UPDATE_MESSAGE,
+        USER_PERMISSIONS.READ_NOTICE,
+        USER_PERMISSIONS.READ_MAINTENANCE,
+        USER_PERMISSIONS.UPDATE_MAINTENANCE,
+      ],
     });
     return res.status(200).json(response);
   } catch (error) {

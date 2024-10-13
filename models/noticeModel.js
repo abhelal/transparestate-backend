@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { customAlphabet } = require("nanoid");
-const notificationSchema = new Schema(
+
+const noticeSchema = new Schema(
   {
-    notificationId: {
+    noticeId: {
       type: String,
       unique: true,
       default: () => {
@@ -28,5 +29,5 @@ const notificationSchema = new Schema(
   { timestamps: true }
 );
 
-const Notification = mongoose.model("Notification", notificationSchema);
-module.exports = Notification;
+const Notice = mongoose.model("Notice", noticeSchema);
+module.exports = Notice;

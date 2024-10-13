@@ -20,20 +20,34 @@ const protectRoute = async (req, res, next) => {
     const user = await User.findById(decodedUser.id).populate("client", "isSubscribed");
 
     if (!user) {
-      return res.status(409).clearCookie("accessToken").json({
-        success: false,
-        message: "Account not found",
-      });
+      return res
+        .status(409)
+        .clearCookie("accessToken", {
+          httpOnly: true,
+          secure: true,
+          domain: process.env.DOMAIN,
+        })
+        .json({
+          success: false,
+          message: "Account not found",
+        });
     }
 
     if (isExpired) {
       user.accessToken = user.accessToken.filter((token) => token !== accessToken);
       await user.save();
 
-      return res.status(401).clearCookie("accessToken").json({
-        success: false,
-        message: "Sorry your session has expired",
-      });
+      return res
+        .status(401)
+        .clearCookie("accessToken", {
+          httpOnly: true,
+          secure: true,
+          domain: process.env.DOMAIN,
+        })
+        .json({
+          success: false,
+          message: "Sorry your session has expired",
+        });
     }
 
     req.id = user._id;
@@ -80,12 +94,3 @@ const permissionCheck = (permission = "") => {
 };
 
 module.exports = { protectRoute, allowAccess, denyAccess, permissionCheck };
-
-// id: this._id,
-//     userId: this.userId,
-//     role: this.role,
-//     email: this.email,
-//     status: this.status,
-//     permissions: this.permissions,
-//     client: this.role === USER_ROLES.SUPERADMIN ? "" : this.client._id,
-//     isSubscribed: this.role === USER_ROLES.SUPERADMIN ? true : this.client.isSubscribed,
