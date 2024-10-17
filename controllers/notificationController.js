@@ -1,9 +1,18 @@
 const Notification = require("../models/notificationModel");
 
 exports.getNotifications = async (req, res) => {
-  const notifications = await Notification.find({ user: req.id }).sort({ createdAt: -1 });
+  const { page = 1, limit = 5 } = req.query;
+
+  const notifications = await Notification.find({ user: req.id })
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  const countUnread = await Notification.countDocuments({ user: req.id, status: "unread" });
+
   return res.status(200).json({
     success: true,
+    unread: countUnread,
     notifications,
   });
 };
