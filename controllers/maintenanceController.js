@@ -3,6 +3,8 @@ const Maintenance = require("../models/maintenanceModel");
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
 const Apartment = require("../models/apartmentModel");
+const Notification = require("../models/notificationModel");
+const socket = require("../socket");
 
 exports.createMaintenance = async (req, res) => {
   const schema = Joi.object({
@@ -22,7 +24,7 @@ exports.createMaintenance = async (req, res) => {
 
   const { apartmentId, maintenanceType, maintenanceDetails } = value;
 
-  const apartment = await Apartment.findOne({ apartmentId, client: req.client });
+  const apartment = await Apartment.findOne({ apartmentId, client: req.client }).populate("property", "name client maintainers janitors");
 
   const newMaintenance = new Maintenance({
     client: apartment.client,
@@ -34,6 +36,22 @@ exports.createMaintenance = async (req, res) => {
   });
 
   await newMaintenance.save();
+
+  // create notification for client, maintainers, and janitors
+  const maintainers = apartment.property.maintainers;
+  const janitors = apartment.property.janitors;
+  const sendTo = [...maintainers, ...janitors, apartment.client];
+
+  sendTo.forEach(async (user) => {
+    const notification = new Notification({
+      user,
+      message: `New maintenance request for ${apartment.floor}-${apartment.door}, ${apartment.property.name}`,
+      href: `/maintenances/${newMaintenance.maintenanceId}`,
+    });
+
+    await notification.save();
+    socket.emitNotification(notification);
+  });
 
   return res.status(200).json({
     success: true,

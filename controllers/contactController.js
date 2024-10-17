@@ -10,6 +10,7 @@ exports.createContact = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 exports.getContacts = async (req, res) => {
   try {
     const { page = 1 } = req.query;

@@ -19,13 +19,6 @@ const propertySchema = new Schema(
       ref: "Client",
       required: true,
     },
-
-    managers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
     maintainers: [
       {
         type: Schema.Types.ObjectId,

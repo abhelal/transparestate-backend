@@ -103,7 +103,6 @@ exports.getProperty = async (req, res) => {
   try {
     const { id } = req.params;
     const property = await Property.findOne({ propertyId: id, client: req.client })
-      .populate("managers", "name email contactNumber")
       .populate("maintainers", "name email contactNumber")
       .populate("janitors", "name email contactNumber")
       .populate({

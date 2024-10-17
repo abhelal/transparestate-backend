@@ -111,7 +111,13 @@ function emitMessage(message) {
   if (io) io.emit("newMessage", message);
 }
 
+function emitNotification(notification) {
+  const receiver = notification.user.toString();
+  if (io) io.to(onlineUsers[receiver]).emit("newNotification", notification);
+}
+
 module.exports = {
   initialize,
   emitMessage,
+  emitNotification,
 };

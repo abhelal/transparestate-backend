@@ -50,14 +50,14 @@ const protectRoute = async (req, res, next) => {
         });
     }
 
-    req.id = user._id;
+    req.id = user._id.toString();
     req.userId = user.userId;
     req.role = user.role;
     req.email = user.email;
     req.name = user?.name || "";
     req.status = user.status;
     req.permissions = user.permissions;
-    req.client = user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id;
+    req.client = user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id.toString();
     req.isSubscribed = user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed;
 
     return next();
