@@ -1,4 +1,5 @@
 const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
+const Tenant = require("../models/tenantModel");
 const User = require("../models/userModel");
 const {
   fetchAllClients,
@@ -121,6 +122,10 @@ exports.createTenant = async (req, res) => {
         USER_PERMISSIONS.UPDATE_MAINTENANCE,
       ],
     });
+
+    const tenant = await Tenant.create({ userId: response.userId });
+    await User.findOneAndUpdate({ userId: response.userId }, { tenant: tenant._id });
+
     return res.status(200).json(response);
   } catch (error) {
     return res.status(400).json({ message: error.message });

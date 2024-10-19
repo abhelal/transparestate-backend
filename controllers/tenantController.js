@@ -7,6 +7,7 @@ const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
 const { deleteFile } = require("../services/storage");
 const { generateNewTenantBill } = require("../services/bills");
+const { path } = require("../routes/v1/maintenanceRoutes");
 
 exports.updateTenantInfo = async (req, res) => {
   try {
@@ -221,17 +222,7 @@ exports.createTenantDocument = async (req, res) => {
   try {
     const userId = req.params.userId;
     const { name, documentCategory, note } = req.body;
-
     const { file } = req;
-
-    const user = await User.findOne({ userId, client: req.client });
-
-    if (!user) {
-      return res.status(409).json({
-        success: false,
-        message: "User not found",
-      });
-    }
 
     if (!file) {
       return res.status(409).json({
@@ -250,6 +241,15 @@ exports.createTenantDocument = async (req, res) => {
     };
 
     const tenant = await Tenant.findOne({ userId });
+    console.log(tenant);
+
+    if (!tenant) {
+      return res.status(409).json({
+        success: false,
+        message: "Tenant not found",
+      });
+    }
+
     tenant.documents.push(document);
     await tenant.save();
 
@@ -298,7 +298,7 @@ exports.getMyApartment = async (req, res) => {
       path: "apartments",
       populate: {
         path: "property",
-        select: "name",
+        select: "name propertyType street buildingNo zipCode city country",
       },
     });
 
@@ -317,6 +317,39 @@ exports.getMyApartment = async (req, res) => {
     }));
 
     return res.status(200).json({ success: true, apartments });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getMyRental = async (req, res) => {
+  try {
+    const rentals = await Apartment.find({ tenant: req.id }).populate("property", "name street buildingNo city country");
+    return res.status(200).json({ success: true, rentals });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getMyRentalDetails = async (req, res) => {
+  try {
+    const { apartmentId } = req.params;
+    const rental = await Apartment.findOne({ apartmentId, tenant: req.id }).populate({
+      path: "property",
+      select: "name street buildingNo city country",
+      populate: {
+        path: "maintainers janitors",
+        select: "userId name lastName email phone",
+      },
+    });
+    if (!rental) {
+      return res.status(409).json({
+        success: false,
+        message: "Rental not found",
+      });
+    }
+
+    return res.status(200).json({ success: true, rental });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

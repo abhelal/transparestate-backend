@@ -36,6 +36,8 @@ router.delete(
 
 // tenants routes
 router.get("/myapartment", allowAccess([USER_ROLES.TENANT]), catchErrors(tenantController.getMyApartment));
+router.get("/myrental", allowAccess([USER_ROLES.TENANT]), catchErrors(tenantController.getMyRental));
+router.get("/myrental/:apartmentId", allowAccess([USER_ROLES.TENANT]), catchErrors(tenantController.getMyRentalDetails));
 router.get("/mybills", allowAccess([USER_ROLES.TENANT]), catchErrors(tenantController.getMyBills));
 
 module.exports = router;

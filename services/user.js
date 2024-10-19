@@ -74,6 +74,7 @@ exports.createUserAccount = async ({ userData, client, role, permissions = [] })
 
   return {
     success: true,
+    userId: user.userId,
     message: toSentenceCase(role + " created successfully"),
   };
 };

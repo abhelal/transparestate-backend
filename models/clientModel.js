@@ -4,7 +4,7 @@ const { customAlphabet } = require("nanoid");
 
 const clientSchema = new Schema(
   {
-    clisentId: {
+    clientId: {
       type: String,
       unique: true,
       default: () => {
