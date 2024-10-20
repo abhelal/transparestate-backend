@@ -12,11 +12,10 @@ const conversationSchema = new Schema(
         return nanoid();
       },
     },
-    maintenanceId: { type: String, unique: true },
+    // participant , and they are user .
+
     client: { type: Schema.Types.ObjectId, ref: "User" },
     property: { type: Schema.Types.ObjectId, ref: "Property" },
-    tenant: { type: Schema.Types.ObjectId, ref: "User" },
-    maintenance: { type: Schema.Types.ObjectId, ref: "Maintenance" },
     messages: [{ type: Schema.Types.ObjectId, ref: "Message" }],
     archived: { type: Boolean, default: false },
     archivedBy: [{ type: Schema.Types.ObjectId, ref: "User" }],

@@ -132,6 +132,20 @@ exports.startConversation = async (req, res) => {
   res.status(200).json({ conversationId: conversation.conversationId });
 };
 
+exports.startNewConversation = async (req, res) => {
+  const { id } = req.params;
+  const conversation = await Conversation.findOne({ tenant: id, property: req.property });
+  if (!conversation) {
+    const newConversation = await Conversation.create({
+      tenant: id,
+      property: req.property,
+      client: req.client,
+    });
+    return res.status(200).json({ conversationId: newConversation.conversationId });
+  }
+  res.status(200).json({ conversationId: conversation.conversationId });
+};
+
 exports.archiveConversation = async (req, res) => {
   const { conversationId } = req.params;
   const conversation = await Conversation.findOne({ conversationId });
