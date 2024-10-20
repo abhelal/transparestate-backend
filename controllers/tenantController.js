@@ -2,6 +2,7 @@ const User = require("../models/userModel");
 const Tenant = require("../models/tenantModel");
 const Apartment = require("../models/apartmentModel");
 const Bill = require("../models/billsModel");
+const Client = require("../models/clientModel");
 
 const Joi = require("joi");
 const { USER_ROLES } = require("../constants");
@@ -334,14 +335,25 @@ exports.getMyRental = async (req, res) => {
 exports.getMyRentalDetails = async (req, res) => {
   try {
     const { apartmentId } = req.params;
-    const rental = await Apartment.findOne({ apartmentId, tenant: req.id }).populate({
-      path: "property",
-      select: "name street buildingNo city country",
-      populate: {
-        path: "maintainers janitors",
-        select: "userId name lastName email phone",
-      },
-    });
+
+    const rental = await Apartment.findOne({ apartmentId, tenant: req.id })
+      .populate({
+        path: "client",
+        select: "companyName",
+        populate: {
+          path: "owner",
+          select: "name email phone",
+        },
+      })
+      .populate({
+        path: "property",
+        select: "name propertyType street buildingNo city country",
+        populate: {
+          path: "maintainers janitors",
+          select: "userId name email contactNumber",
+        },
+      });
+
     if (!rental) {
       return res.status(409).json({
         success: false,
