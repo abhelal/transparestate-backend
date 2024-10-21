@@ -12,12 +12,9 @@ const conversationSchema = new Schema(
         return nanoid();
       },
     },
-    // participant , and they are user .
-
+    participants: [{ type: Schema.Types.ObjectId, ref: "User" }],
     client: { type: Schema.Types.ObjectId, ref: "User" },
-    property: { type: Schema.Types.ObjectId, ref: "Property" },
     messages: [{ type: Schema.Types.ObjectId, ref: "Message" }],
-    archived: { type: Boolean, default: false },
     archivedBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
