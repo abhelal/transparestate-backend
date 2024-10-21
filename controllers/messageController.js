@@ -56,7 +56,7 @@ exports.getConversations = async (req, res) => {
   const conversationWithSenderReceiver = conversations.map((conversation) => {
     const myself = conversation.participants.find((participant) => participant._id.toString() === req.id);
     const other = conversation.participants.find((participant) => participant._id.toString() !== req.id);
-    return { conversation, myself, other };
+    return { ...conversation.toObject(), myself, other };
   });
 
   res.status(200).json({ conversations: conversationWithSenderReceiver });

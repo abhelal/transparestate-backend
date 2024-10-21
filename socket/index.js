@@ -79,19 +79,20 @@ function initialize(server) {
         if (!sender) return new Error("Not Authorised");
         const conversation = await Conversation.findOne({ conversationId });
         if (!conversation) return;
+
+        const receiver = conversation.participants.find((participant) => participant._id.toString() !== sender);
         const message = await Message.create({
           conversation: conversation._id,
           conversationId,
           sender,
           senderId: socket.userId,
-          senderRole: socket.user.role,
           text,
           image,
           file,
         });
         conversation.messages.push(message._id);
         await conversation.save();
-        io.to(onlineUsers[conversation.tenant]).to(`property-room-${conversation.property}`).emit("newMessage", message);
+        io.to(onlineUsers[sender]).to(onlineUsers[receiver]).emit("newMessage", message);
       } catch (error) {
         console.error("Error in sendNewMessage:", error);
       }
