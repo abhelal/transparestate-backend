@@ -19,6 +19,10 @@ router.put(
   permissionCheck(USER_PERMISSIONS.UPDATE_MESSAGE),
   catchErrors(messageController.archiveConversation)
 );
-router.post("/:maintenanceId/start", permissionCheck(USER_PERMISSIONS.UPDATE_MESSAGE), catchErrors(messageController.startConversation));
+router.put(
+  "/:conversationId/unarchive",
+  permissionCheck(USER_PERMISSIONS.UPDATE_MESSAGE),
+  catchErrors(messageController.unarchiveConversation)
+);
 
 module.exports = router;

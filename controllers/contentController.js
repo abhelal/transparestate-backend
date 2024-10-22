@@ -9,7 +9,6 @@ exports.createOrUpdate = async (req, res) => {
 
 exports.get = async (req, res) => {
   const { name } = req.params;
-  console.log(name);
   const content = await Content.findOne({ name });
   res.status(200).json(content);
 };

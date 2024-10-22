@@ -8,6 +8,7 @@ const { USER_PERMISSIONS } = require("../../constants");
 // :: Prefix Path ---  '/api/v1/maintenance'
 
 router.get("/list", catchErrors(maintenanceController.getMaintenances));
+router.get("/:maintenanceId", catchErrors(maintenanceController.getMaintenance));
 router.post("/create", catchErrors(maintenanceController.createMaintenance));
 router.put("/:maintenanceId/update", catchErrors(maintenanceController.updateMaintenance));
 

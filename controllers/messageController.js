@@ -4,34 +4,6 @@ const Message = require("../models/messageModel");
 const Maintenance = require("../models/maintenanceModel");
 const User = require("../models/userModel");
 
-exports.getArchivedConversations = async (req, res) => {
-  let query = {
-    client: req.client,
-    archivedBy: { $eq: req.id },
-  };
-
-  if (req.role === USER_ROLES.TENANT) {
-    query.tenant = req.id;
-  }
-
-  if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
-    const staff = await User.findById(req.id);
-    const properties = staff.properties;
-    query.property = { $in: properties };
-  }
-
-  const conversations = await Conversation.find(query)
-    .populate("property", "name")
-    .populate("maintenance", "maintenanceType maintenanceDetails")
-    .populate({
-      path: "messages",
-      options: { sort: { createdAt: -1 } },
-      perDocumentLimit: 1,
-    })
-    .sort("-updatedAt");
-  res.status(200).json({ conversations });
-};
-
 exports.getConversations = async (req, res) => {
   const conversations = await Conversation.find({
     client: req.client,
@@ -62,31 +34,49 @@ exports.getConversations = async (req, res) => {
   res.status(200).json({ conversations: conversationWithSenderReceiver });
 };
 
-exports.getRecentMessages = async (req, res) => {
-  let query = {
+exports.getArchivedConversations = async (req, res) => {
+  const conversations = await Conversation.find({
     client: req.client,
-  };
+    participants: { $in: [req.id] },
+    archivedBy: req.id,
+  })
+    .populate({ path: "participants", select: "name role email" })
+    .populate({ path: "messages", options: { sort: { createdAt: -1 } }, perDocumentLimit: 1 })
+    .sort("-updatedAt");
 
-  if (req.role === USER_ROLES.TENANT) {
-    query.tenant = req.id;
-  }
+  const conversationWithSenderReceiver = conversations.map((conversation) => {
+    const myself = conversation.participants.find((participant) => participant._id.toString() === req.id);
+    const other = conversation.participants.find((participant) => participant._id.toString() !== req.id);
+    return { ...conversation.toObject(), myself, other };
+  });
 
-  if (req.role === USER_ROLES.MANAGER || req.role === USER_ROLES.MAINTAINER || req.role === USER_ROLES.JANITOR) {
-    const staff = await User.findById(req.id);
-    const properties = staff.properties;
-    query.property = { $in: properties };
-  }
+  res.status(200).json({ conversations: conversationWithSenderReceiver });
+};
 
-  const messages = await Conversation.find(query)
-    .populate("property", "name")
-    .populate("maintenance", "maintenanceType maintenanceDetails")
+exports.getRecentMessages = async (req, res) => {
+  const conversations = await Conversation.find({ client: req.client, participants: { $in: [req.id] }, archivedBy: { $ne: req.id } })
+    .populate({
+      path: "participants",
+      select: "userId name role email",
+      populate: {
+        path: "properties",
+        select: "name",
+      },
+    })
     .populate({
       path: "messages",
       options: { sort: { createdAt: -1 } },
       perDocumentLimit: 1,
     })
-    .sort("-updatedAt");
-  res.status(200).json({ messages });
+    .sort("-updatedAt")
+    .limit(5);
+
+  const conversationWithSenderReceiver = conversations.map((conversation) => {
+    const myself = conversation.participants.find((participant) => participant._id.toString() === req.id);
+    const other = conversation.participants.find((participant) => participant._id.toString() !== req.id);
+    return { ...conversation.toObject(), myself, other };
+  });
+  res.status(200).json({ messages: conversationWithSenderReceiver });
 };
 
 exports.getMessages = async (req, res) => {
@@ -107,10 +97,10 @@ exports.getMessages = async (req, res) => {
 
   const myself = conversation.participants.find((participant) => participant._id.toString() === req.id);
   const other = conversation.participants.find((participant) => participant._id.toString() !== req.id);
-
   const messages = conversation.messages;
+  const archived = conversation.archivedBy.includes(req.id);
 
-  res.status(200).json({ conversationId, myself, other, messages });
+  res.status(200).json({ conversationId, archived, myself, other, messages });
 };
 
 exports.sendMessage = async (req, res) => {
@@ -127,23 +117,6 @@ exports.sendMessage = async (req, res) => {
   conversation.messages.push(message._id);
   await conversation.save();
   res.status(200).json({ message });
-};
-
-exports.startConversation = async (req, res) => {
-  const { maintenanceId } = req.params;
-  const conversation = await Conversation.findOne({ maintenanceId });
-  if (!conversation) {
-    const maintenance = await Maintenance.findOne({ maintenanceId });
-    const newConversation = await Conversation.create({
-      maintenanceId: maintenance.maintenanceId,
-      client: maintenance.client,
-      property: maintenance.property,
-      tenant: maintenance.tenant,
-      maintenance: maintenance._id,
-    });
-    return res.status(200).json({ conversationId: newConversation.conversationId });
-  }
-  res.status(200).json({ conversationId: conversation.conversationId });
 };
 
 exports.startNewConversation = async (req, res) => {
@@ -170,4 +143,12 @@ exports.archiveConversation = async (req, res) => {
   conversation.archivedBy.push(req.id);
   await conversation.save();
   res.status(200).json({ message: "Conversation archived" });
+};
+
+exports.unarchiveConversation = async (req, res) => {
+  const { conversationId } = req.params;
+  const conversation = await Conversation.findOne({ conversationId });
+  conversation.archivedBy = conversation.archivedBy.filter((id) => id.toString() !== req.id);
+  await conversation.save();
+  res.status(200).json({ message: "Conversation unarchived" });
 };

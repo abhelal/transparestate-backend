@@ -22,6 +22,7 @@ const noticeRoutes = require("./noticeRoutes");
 const billRoutes = require("./billRoutes");
 const reportRoutes = require("./reportRoutes");
 const contactRoutes = require("./contactRoutes");
+const feedbackRoutes = require("./feedbackRoutes");
 const supportRoutes = require("./supportRoutes");
 const notificationRoutes = require("./notificationRoutes");
 
@@ -40,6 +41,7 @@ router.use("/storage", protectRoute, storageRoutes);
 router.use("/messages", protectRoute, messageRoutes);
 router.use("/dashboard", protectRoute, dashboardRoutes);
 router.use("/content", contentRoures);
+router.use("/feedback", protectRoute, feedbackRoutes);
 router.use("/utility", protectRoute, utilityRoutes);
 router.use("/notice", protectRoute, noticeRoutes);
 router.use("/bills", protectRoute, billRoutes);

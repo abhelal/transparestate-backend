@@ -45,8 +45,8 @@ exports.createMaintenance = async (req, res) => {
   sendTo.forEach(async (user) => {
     const notification = new Notification({
       user,
-      message: `New maintenance request for ${apartment.floor}-${apartment.door}, ${apartment.property.name}`,
-      href: `/maintenances/${newMaintenance.maintenanceId}`,
+      message: `${apartment.floor}-${apartment.door}, ${apartment.property.name} has a new maintenance request`,
+      href: `/maintenance/${newMaintenance.maintenanceId}`,
     });
 
     await notification.save();
@@ -96,6 +96,26 @@ exports.getMaintenances = async (req, res) => {
     success: true,
     maintenances,
     totalPages: Math.ceil(total / 10),
+  });
+};
+
+exports.getMaintenance = async (req, res) => {
+  const { maintenanceId } = req.params;
+
+  const maintenance = await Maintenance.findOne({ maintenanceId })
+    .populate("property", "name street buildingNo zipCode city country")
+    .populate("apartment", "floor door");
+
+  if (!maintenance) {
+    return res.status(404).json({
+      success: false,
+      message: "Maintenance not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    maintenance,
   });
 };
 
