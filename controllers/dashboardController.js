@@ -25,7 +25,9 @@ const monthNames = [
 
 exports.getClientDashboardData = async (req, res) => {
   try {
-    const { client } = req;
+    const { client, userId } = req;
+    const user = await User.findOne({ userId });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
     const totalProperties = await Properties.countDocuments({ client });
     const totalApartments = await Apartment.countDocuments({ client });
@@ -45,9 +47,7 @@ exports.getClientDashboardData = async (req, res) => {
 
     const maintenanceRequestAndComplete = await Maintenance.aggregate([
       {
-        $match: {
-          client,
-        },
+        $match: { client: { $eq: user.client } },
       },
       {
         $group: {
@@ -117,6 +117,7 @@ exports.getDashboardData = async (req, res) => {
     const freeApartments = totalApartments - rentedApartments;
 
     const totalMaintenances = await Maintenance.countDocuments({ client, property: { $in: user.properties } });
+
     const maintenanceInProgress = await Maintenance.countDocuments({
       client,
       property: { $in: user.properties },

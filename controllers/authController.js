@@ -1,88 +1,98 @@
 const User = require("../models/userModel");
 const Client = require("../models/clientModel");
 const Joi = require("joi");
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
 
 // register user
 
 exports.register = async (req, res) => {
-  const objectSchema = Joi.object({
-    name: Joi.string().required(),
-    email: Joi.string()
-      .lowercase()
-      .trim()
-      .min(3)
-      .max(255)
-      .email({ tlds: { allow: true } })
-      .required(),
-    password: Joi.string().required(),
-    companyName: Joi.string().optional(),
-  }).options({ stripUnknown: true, abortEarly: false });
+  try {
+    const objectSchema = Joi.object({
+      name: Joi.string().required(),
+      email: Joi.string()
+        .lowercase()
+        .trim()
+        .min(3)
+        .max(255)
+        .email({ tlds: { allow: true } })
+        .required(),
+      password: Joi.string().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
 
-  const { error, value } = objectSchema.validate(req.body);
+    const { error, value } = objectSchema.validate(req.body);
 
-  if (error) {
+    if (error) {
+      return res.status(409).json({
+        success: false,
+        message: "Invalid form data",
+        errorMessage: error.message,
+      });
+    }
+    const { name, email, password } = value;
+
+    const isExits = await User.findOne({ email: email });
+    console.log(isExits);
+
+    if (isExits) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: USER_ROLES.CLIENT,
+      status: USER_STATUS.NEW,
+      permissions: [],
+    });
+
+    const client = await Client.create({
+      owner: user._id,
+      companyName: req.body?.companyName,
+      isSubscribed: false,
+    });
+
+    const userWithClient = await User.findOneAndUpdate({ _id: user._id }, { client: client._id }, { new: true }).populate(
+      "client",
+      "isSubscribed"
+    );
+
+    const token = await userWithClient.generateAuthToken();
+
+    return res
+      .status(201)
+      .cookie("accessToken", token, {
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: true,
+        domain: process.env.DOMAIN,
+      })
+      .json({
+        success: true,
+        message: "Client registered successfully",
+        user: {
+          id: userWithClient._id,
+          userId: userWithClient.userId,
+          status: userWithClient.status,
+          name: userWithClient.name,
+          email: userWithClient.email,
+          role: userWithClient.role,
+          permissions: userWithClient.permissions,
+          client: userWithClient.client._id,
+          isSubscribed: userWithClient.client.isSubscribed,
+        },
+      });
+  } catch (error) {
+    console.log(error);
     return res.status(409).json({
       success: false,
-      message: "Invalid form data",
+      message: "Error occurred",
       errorMessage: error.message,
     });
   }
-  const { name, email, password } = value;
-  const isExits = await User.findOne({ email: email });
-
-  if (isExits) {
-    return res.status(409).json({
-      success: false,
-      message: "Email already exists",
-    });
-  }
-
-  const user = await User.create({
-    name,
-    email,
-    password,
-    role: USER_ROLES.CLIENT,
-    status: USER_STATUS.NEW,
-    permissions: [],
-  });
-
-  const client = await Client.create({
-    owner: user._id,
-    companyName: value.companyName,
-    isSubscribed: false,
-  });
-
-  const userWithClient = await User.findOneAndUpdate({ _id: user._id }, { client: client._id }, { new: true }).populate(
-    "client",
-    "isSubscribed"
-  );
-
-  const token = await userWithClient.generateAuthToken();
-
-  return res
-    .status(201)
-    .cookie("accessToken", token, {
-      maxAge: 365 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: true,
-      domain: process.env.DOMAIN,
-    })
-    .json({
-      success: true,
-      message: "Client registered successfully",
-      user: {
-        id: userWithClient._id,
-        userId: userWithClient.userId,
-        status: userWithClient.status,
-        name: userWithClient.name,
-        email: userWithClient.email,
-        role: userWithClient.role,
-        permissions: userWithClient.permissions,
-        client: userWithClient.client._id,
-        isSubscribed: userWithClient.client.isSubscribed,
-      },
-    });
 };
 
 // login user
@@ -292,7 +302,6 @@ exports.updatePassword = async (req, res) => {
 
 exports.updateAddress = async (req, res) => {
   const objectSchema = Joi.object({
-    contactNumber: Joi.string().required(),
     street: Joi.string().required(),
     buildingNo: Joi.string().required(),
     zipCode: Joi.string().required(),
@@ -319,12 +328,13 @@ exports.updateAddress = async (req, res) => {
     });
   }
 
-  user.contactNumber = value.contactNumber;
+  user.contactNumber = req.body?.contactNumber;
   user.street = value.street;
   user.buildingNo = value.buildingNo;
   user.zipCode = value.zipCode;
   user.city = value.city;
   user.country = value.country;
+
   await user.save();
 
   return res.status(200).json({
