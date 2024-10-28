@@ -27,7 +27,7 @@ const apartmentSchema = new Schema(
       ref: "User",
     },
     floor: {
-      type: Number,
+      type: String,
       required: true,
     },
     door: {

@@ -354,8 +354,8 @@ exports.createApartment = async (req, res) => {
     }
 
     const schema = Joi.object({
-      floor: Joi.number().required(),
-      door: Joi.string().required().uppercase(),
+      floor: Joi.string().required().alphanum().uppercase(),
+      door: Joi.string().required().alphanum().uppercase(),
       size: Joi.number().required(),
       rooms: Joi.number().required(),
     }).options({ stripUnknown: true, abortEarly: false });

@@ -123,7 +123,7 @@ exports.updateMaintenance = async (req, res) => {
   const { maintenanceId } = req.params;
   const { status } = req.body;
 
-  const maintenance = await Maintenance.findOne({ maintenanceId });
+  const maintenance = await Maintenance.findOne({ maintenanceId }).populate("apartment property");
 
   if (!maintenance) {
     return res.status(404).json({
@@ -148,6 +148,18 @@ exports.updateMaintenance = async (req, res) => {
 
   maintenance.maintenanceStatus = status;
   await maintenance.save();
+
+  // send notification to tenant
+  const notification = new Notification({
+    user: maintenance.tenant,
+    message: `Maintenance request for ${maintenance.apartment.floor}-${maintenance.apartment.door}, ${
+      maintenance.property.name
+    } is ${status.toLowerCase()}`,
+    href: `/maintenance/${maintenance.maintenanceId}`,
+  });
+
+  await notification.save();
+  socket.emitNotification(notification);
 
   return res.status(200).json({
     success: true,
