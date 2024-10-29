@@ -265,6 +265,31 @@ exports.getAddress = async (req, res) => {
   });
 };
 
+exports.getSettings = async (req, res) => {
+  const user = await User.findOne({ userId: req.userId });
+
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "User settings",
+    notifications: user.notificationSettings,
+    address: {
+      contactNumber: user.contactNumber,
+      street: user.street,
+      buildingNo: user.buildingNo,
+      zipCode: user.zipCode,
+      city: user.city,
+      country: user.country,
+    },
+  });
+};
+
 exports.updatePassword = async (req, res) => {
   const { currentPassword, newPassword, confirmNewPassword } = req.body;
   const user = await User.findOne({ userId: req.userId });
@@ -340,5 +365,38 @@ exports.updateAddress = async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Address updated successfully",
+  });
+};
+
+exports.updateNotifications = async (req, res) => {
+  const objectSchema = Joi.object({
+    notifications: Joi.array().items(Joi.string()).required(),
+  }).options({ stripUnknown: true, abortEarly: false });
+
+  const { error, value } = objectSchema.validate(req.body);
+
+  if (error) {
+    return res.status(409).json({
+      success: false,
+      message: "Invalid form data",
+      errorMessage: error.message,
+    });
+  }
+
+  const user = await User.findOne({ userId: req.userId });
+
+  if (!user) {
+    return res.status(409).json({
+      success: false,
+      message: "Account not found",
+    });
+  }
+
+  user.notificationSettings = value.notifications;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Notifications updated successfully",
   });
 };

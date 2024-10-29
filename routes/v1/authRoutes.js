@@ -14,7 +14,9 @@ router.post("/logout-others", protectRoute, catchErrors(authControler.logoutOthe
 router.post("/logout-all", protectRoute, catchErrors(authControler.logoutAll));
 router.get("/me", protectRoute, catchErrors(authControler.me));
 router.get("/address", protectRoute, catchErrors(authControler.getAddress));
+router.get("/settings", protectRoute, catchErrors(authControler.getSettings));
 router.post("/update-password", protectRoute, catchErrors(authControler.updatePassword));
 router.post("/update-address", protectRoute, catchErrors(authControler.updateAddress));
+router.post("/update-notifications", protectRoute, catchErrors(authControler.updateNotifications));
 
 module.exports = router;

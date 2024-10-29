@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { customAlphabet } = require("nanoid");
-const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS, USER_NOTIFICATIONS } = require("../constants");
 
 const userSchema = new Schema(
   {
@@ -52,7 +52,11 @@ const userSchema = new Schema(
         enum: Object.keys(USER_PERMISSIONS),
       },
     ],
-
+    notificationSettings: {
+      type: [String],
+      default: Object.keys(USER_NOTIFICATIONS),
+      enum: Object.keys(USER_NOTIFICATIONS),
+    },
     status: {
       type: String,
       enum: Object.keys(USER_STATUS),

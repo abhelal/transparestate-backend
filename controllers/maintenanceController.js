@@ -5,6 +5,7 @@ const { USER_ROLES } = require("../constants");
 const Apartment = require("../models/apartmentModel");
 const Notification = require("../models/notificationModel");
 const socket = require("../socket");
+const Client = require("../models/clientModel");
 
 exports.createMaintenance = async (req, res) => {
   const schema = Joi.object({
@@ -38,19 +39,25 @@ exports.createMaintenance = async (req, res) => {
   await newMaintenance.save();
 
   // create notification for client, maintainers, and janitors
+
+  const owner = await Client.findById(apartment.client).select("owner");
+
   const maintainers = apartment.property.maintainers;
   const janitors = apartment.property.janitors;
-  const sendTo = [...maintainers, ...janitors, apartment.client];
+  const sendTo = [...maintainers, ...janitors, owner.owner];
 
   sendTo.forEach(async (user) => {
-    const notification = new Notification({
-      user,
-      message: `${apartment.floor}-${apartment.door}, ${apartment.property.name} has a new maintenance request`,
-      href: `/maintenance/${newMaintenance.maintenanceId}`,
-    });
+    const dbU = await User.findById(user).select("notificationSettings");
+    if (dbU && dbU.notificationSettings.includes("MAINTENANCE_NOTIFICATION")) {
+      const notification = new Notification({
+        user,
+        message: `${apartment.floor}-${apartment.door}, ${apartment.property.name} has a new maintenance request`,
+        href: `/maintenance/${newMaintenance.maintenanceId}`,
+      });
 
-    await notification.save();
-    socket.emitNotification(notification);
+      await notification.save();
+      socket.emitNotification(notification);
+    }
   });
 
   return res.status(200).json({
@@ -149,17 +156,20 @@ exports.updateMaintenance = async (req, res) => {
   maintenance.maintenanceStatus = status;
   await maintenance.save();
 
-  // send notification to tenant
-  const notification = new Notification({
-    user: maintenance.tenant,
-    message: `Maintenance request for ${maintenance.apartment.floor}-${maintenance.apartment.door}, ${
-      maintenance.property.name
-    } is ${status.toLowerCase()}`,
-    href: `/maintenance/${maintenance.maintenanceId}`,
-  });
+  const dbU = await User.findById(maintenance.tenant).select("notificationSettings");
+  if (dbU && dbU.notificationSettings.includes("MAINTENANCE_NOTIFICATION")) {
+    // send notification to tenant
+    const notification = new Notification({
+      user: maintenance.tenant,
+      message: `Maintenance request for ${maintenance.apartment.floor}-${maintenance.apartment.door}, ${
+        maintenance.property.name
+      } is ${status.toLowerCase()}`,
+      href: `/maintenance/${maintenance.maintenanceId}`,
+    });
 
-  await notification.save();
-  socket.emitNotification(notification);
+    await notification.save();
+    socket.emitNotification(notification);
+  }
 
   return res.status(200).json({
     success: true,
