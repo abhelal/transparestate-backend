@@ -63,6 +63,7 @@ const userSchema = new Schema(
       default: USER_STATUS.NEW,
     },
     client: { type: Schema.Types.ObjectId, ref: "Client" },
+    provider: { type: Schema.Types.ObjectId, ref: "Provider" },
     properties: [{ type: Schema.Types.ObjectId, ref: "Property" }],
     apartments: [{ type: Schema.Types.ObjectId, ref: "Apartment" }],
     tenant: { type: Schema.Types.ObjectId, ref: "Tenant" },

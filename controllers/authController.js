@@ -1,7 +1,8 @@
 const User = require("../models/userModel");
 const Client = require("../models/clientModel");
+const Provider = require("../models/providerModel");
 const Joi = require("joi");
-const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
+const { USER_ROLES, USER_STATUS } = require("../constants");
 
 // register user
 
@@ -31,7 +32,6 @@ exports.register = async (req, res) => {
     const { name, email, password } = value;
 
     const isExits = await User.findOne({ email: email });
-    console.log(isExits);
 
     if (isExits) {
       return res.status(409).json({
@@ -95,6 +95,89 @@ exports.register = async (req, res) => {
   }
 };
 
+// register provider
+
+exports.registerProvider = async (req, res) => {
+  try {
+    const objectSchema = Joi.object({
+      companyName: Joi.string().required().min(3).max(255),
+      email: Joi.string()
+        .lowercase()
+        .trim()
+        .min(3)
+        .max(255)
+        .email({ tlds: { allow: true } })
+        .required(),
+      password: Joi.string().required(),
+    }).options({ stripUnknown: true, abortEarly: false });
+
+    const { error, value } = objectSchema.validate(req.body);
+
+    if (error) {
+      return res.status(409).json({
+        success: false,
+        message: "Invalid form data",
+        errorMessage: error.message,
+      });
+    }
+    const { companyName, email, password } = value;
+
+    const isExits = await User.findOne({ email: email });
+
+    if (isExits) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+    const provider = new Provider({});
+
+    const user = await User.create({
+      companyName,
+      email,
+      password,
+      role: USER_ROLES.PROVIDER,
+      status: USER_STATUS.NEW,
+      permissions: [],
+      provider: provider._id,
+    });
+
+    provider.userId = user.userId;
+    await provider.save();
+
+    const token = await user.generateAuthToken();
+
+    return res
+      .status(201)
+      .cookie("accessToken", token, {
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: true,
+        domain: process.env.DOMAIN,
+      })
+      .json({
+        success: true,
+        message: "Company registered successfully",
+        user: {
+          id: user._id,
+          userId: user.userId,
+          status: user.status,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions,
+        },
+      });
+  } catch (error) {
+    console.log(error);
+    return res.status(409).json({
+      success: false,
+      message: "Error occurred",
+      errorMessage: error.message,
+    });
+  }
+};
+
 // login user
 
 exports.login = async (req, res) => {
@@ -133,6 +216,7 @@ exports.login = async (req, res) => {
       message: "Incorrect password",
     });
   }
+
   const token = await user.generateAuthToken();
 
   return res
@@ -155,8 +239,8 @@ exports.login = async (req, res) => {
         role: user.role,
         status: user.status,
         permissions: user.permissions,
-        client: user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id,
-        isSubscribed: user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed,
+        client: user.role === USER_ROLES.SUPERADMIN || user.role === USER_ROLES.PROVIDER ? "" : user.client._id.toString(),
+        isSubscribed: user.role === USER_ROLES.SUPERADMIN || user.role === USER_ROLES.PROVIDER ? true : user.client.isSubscribed,
       },
     });
 };
@@ -266,7 +350,7 @@ exports.getAddress = async (req, res) => {
 };
 
 exports.getSettings = async (req, res) => {
-  const user = await User.findOne({ userId: req.userId });
+  const user = await User.findOne({ userId: req.userId }).populate(req.role === USER_ROLES.PROVIDER ? "provider" : "");
 
   if (!user) {
     return res.status(409).json({
@@ -279,6 +363,7 @@ exports.getSettings = async (req, res) => {
     success: true,
     message: "User settings",
     notifications: user.notificationSettings,
+    role: user.role,
     address: {
       contactNumber: user.contactNumber,
       street: user.street,
@@ -287,6 +372,7 @@ exports.getSettings = async (req, res) => {
       city: user.city,
       country: user.country,
     },
+    services: user.role === USER_ROLES.PROVIDER ? user.provider.services : [],
   });
 };
 

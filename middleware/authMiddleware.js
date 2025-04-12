@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const { USER_ROLES } = require("../constants");
-const { name } = require("../routes/v1/maintenanceRoutes");
 
 const protectRoute = async (req, res, next) => {
   try {
@@ -57,8 +56,8 @@ const protectRoute = async (req, res, next) => {
     req.name = user?.name || "";
     req.status = user.status;
     req.permissions = user.permissions;
-    req.client = user.role === USER_ROLES.SUPERADMIN ? "" : user.client._id.toString();
-    req.isSubscribed = user.role === USER_ROLES.SUPERADMIN ? true : user.client.isSubscribed;
+    req.client = user.role === USER_ROLES.SUPERADMIN || user.role === USER_ROLES.PROVIDER ? "" : user.client._id.toString();
+    req.isSubscribed = user.role === USER_ROLES.SUPERADMIN || user.role === USER_ROLES.PROVIDER ? true : user.client.isSubscribed;
 
     return next();
   } catch (error) {
