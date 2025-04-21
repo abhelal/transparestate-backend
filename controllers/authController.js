@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const Client = require("../models/clientModel");
 const Provider = require("../models/providerModel");
 const Joi = require("joi");
-const { USER_ROLES, USER_STATUS } = require("../constants");
+const { USER_ROLES, USER_STATUS, USER_PERMISSIONS } = require("../constants");
 
 // register user
 
@@ -100,7 +100,7 @@ exports.register = async (req, res) => {
 exports.registerProvider = async (req, res) => {
   try {
     const objectSchema = Joi.object({
-      companyName: Joi.string().required().min(3).max(255),
+      name: Joi.string().required().min(3).max(255),
       email: Joi.string()
         .lowercase()
         .trim()
@@ -120,7 +120,7 @@ exports.registerProvider = async (req, res) => {
         errorMessage: error.message,
       });
     }
-    const { companyName, email, password } = value;
+    const { name, email, password } = value;
 
     const isExits = await User.findOne({ email: email });
 
@@ -133,12 +133,12 @@ exports.registerProvider = async (req, res) => {
     const provider = new Provider({});
 
     const user = await User.create({
-      companyName,
+      name,
       email,
       password,
       role: USER_ROLES.PROVIDER,
       status: USER_STATUS.NEW,
-      permissions: [],
+      permissions: [USER_PERMISSIONS.READ_MESSAGE, USER_PERMISSIONS.UPDATE_MESSAGE],
       provider: provider._id,
     });
 

@@ -6,7 +6,7 @@ const User = require("../models/userModel");
 
 exports.getConversations = async (req, res) => {
   const conversations = await Conversation.find({
-    client: req.client,
+    //client: req.client,
     participants: { $in: [req.id] },
     archivedBy: { $ne: req.id },
   })
@@ -36,7 +36,7 @@ exports.getConversations = async (req, res) => {
 
 exports.getArchivedConversations = async (req, res) => {
   const conversations = await Conversation.find({
-    client: req.client,
+    // client: req.client,
     participants: { $in: [req.id] },
     archivedBy: req.id,
   })

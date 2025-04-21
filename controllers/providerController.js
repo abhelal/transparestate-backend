@@ -42,7 +42,7 @@ exports.getProviders = async (req, res) => {
     role: USER_ROLES.PROVIDER,
     $or: [{ name: { $regex: query, $options: "i" } }, { email: { $regex: query, $options: "i" } }],
   })
-    .select("name contactNumber email status")
+    .select("userId name contactNumber email status")
     .populate("provider", "-_id providerId services")
     .limit(limit)
     .skip(skip);
@@ -53,5 +53,25 @@ exports.getProviders = async (req, res) => {
     success: true,
     providers,
     totalPages,
+  });
+};
+
+exports.getProvider = async (req, res) => {
+  const { providerId } = req.params;
+
+  const provider = await User.findOne({ userId: providerId })
+    .select("userId name contactNumber email status")
+    .populate("provider", "-_id providerId services");
+
+  if (!provider) {
+    return res.status(404).json({
+      success: false,
+      message: "Provider not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    provider,
   });
 };
